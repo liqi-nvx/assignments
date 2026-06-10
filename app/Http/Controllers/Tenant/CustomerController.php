@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\CustomerRequest;
 use App\Repositories\Tenant\CustomerRepository;
 use App\Services\Tenant\TenantBusinessService;
 use App\Models\Tenant\Customer;
@@ -27,16 +28,15 @@ class CustomerController extends Controller
         return Inertia::render('Tenant/Customers/Index', ['customers' => $customers, 'filters' => $filters]);
     }
 
-    public function store(Request $request)
+    public function store(CustomerRequest $request)
     {
-        $data = $request->validate(['name' => 'required', 'email' => 'required|email', 'phone' => 'required', 'address' => 'nullable']);
-        $this->customerRepo->create($data);
+        $this->customerRepo->create($request->validated());
         return back();
     }
 
-    public function update(Request $request, Customer $customer)
+    public function update(CustomerRequest $request, Customer $customer)
     {
-        $data = $request->validate(['name' => 'required', 'email' => 'required|email', 'phone' => 'required', 'address' => 'nullable']);
+        $data = $request->validated();
         $this->customerRepo->update($customer, $data);
         return back();
     }

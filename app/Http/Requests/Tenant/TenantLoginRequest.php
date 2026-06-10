@@ -1,10 +1,10 @@
 <?php
-namespace App\Http\Requests\Tenant;
 
+namespace App\Http\Requests\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
 
-class PayInvoiceRequest extends FormRequest
-{
+class TenantLoginRequest extends FormRequest {
+    
     public function authorize(): bool {
         return true;
     }
@@ -12,7 +12,8 @@ class PayInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'paid_amount' => ['required', 'numeric', 'min:0.01'],
+            'email'   => ['required', 'email'],
+            'password'=> ['required'],
         ];
     }
 }

@@ -3,7 +3,7 @@ namespace App\Http\Requests\Tenant;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class PayInvoiceRequest extends FormRequest
+class CustomerRequest extends FormRequest
 {
     public function authorize(): bool {
         return true;
@@ -12,7 +12,10 @@ class PayInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'paid_amount' => ['required', 'numeric', 'min:0.01'],
+            'name'    => ['required'],
+            'email'   => ['required', 'email'],
+            'phone'   => ['required'],
+            'address' => ['nullable'],
         ];
     }
 }
