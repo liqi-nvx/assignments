@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('invoice_id')->constrained('invoices')->onDelete('cascade');
             $table->dateTime('payment_date');
-            $table->decimal('paid_amount', 12, 2);
+            $table->decimal('paid_amount', 12, 2)->default(0.00);
             $table->string('trans_no')->unique();
             $table->integer('status')->default(1);
             $table->timestamps();

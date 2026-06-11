@@ -47,7 +47,6 @@
               </td>
               <td class="px-6 py-4">${{ parseFloat(prod.price).toFixed(2) }}</td>
               <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                <button @click="openBuyModal(prod)" :disabled="prod.stock <= 0" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs disabled:opacity-40 disabled:cursor-not-allowed">Buy Now</button>
                 <button @click="openRestockPrompt(prod)" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs">+ Restock</button>
                 <button @click="deleteProd(prod.id)" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded text-xs">Delete</button>
               </td>
@@ -85,30 +84,6 @@
         </div>
       </div>
     </div>
-
-    <div v-if="showBuyModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full">
-        <h3 class="text-lg font-bold text-gray-800 mb-2">Place Order: {{ selectedProd.name }}</h3>
-        <p class="text-xs text-amber-600 font-medium mb-4">Limit Available: {{ selectedProd.stock }} units</p>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Target Customer</label>
-            <select v-model="buyForm.customer_id" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 bg-white">
-              <option value="" disabled>-- Select a Customer --</option>
-              <option v-for="cust in customers" :key="cust.id" :value="cust.id">{{ cust.name }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity to Purchase</label>
-            <input v-model.number="buyForm.quantity" type="number" min="1" :max="selectedProd.stock" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500"/>
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-6">
-          <button @click="showBuyModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded text-sm">Cancel</button>
-          <button @click="submitBuy" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium">Confirm & Generate Invoice</button>
-        </div>
-      </div>
-    </div>
   </AuthenticatedLayout>
 </template>
 
@@ -117,7 +92,7 @@ import AuthenticatedLayout from '@/Components/AuthenticatedLayout.vue';
 import { ref, reactive } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 
-const props = defineProps({ products: Object, filters: Object, customers: Array });
+const props = defineProps({ products: Object, filters: Object });
 
 const filters = reactive({
   search: props.filters.search || '',
@@ -125,22 +100,15 @@ const filters = reactive({
 });
 
 const showCreateModal = ref(false);
-const showBuyModal = ref(false);
-const selectedProd = ref(null);
-
 const createForm = reactive({ name: '', stock: 0, price: 0.00 });
-const buyForm = ref({ customer_id: '', goods_id: '', quantity: 1 });
 
 const doSearch = () => {
-  router.get('/products', { 
-    search: filters.search, 
-    stock_status: filters.stockStatus 
-  }, { preserveState: true, replace: true });
+  router.get('/products', { search: filters.search, stock_status: filters.stockStatus }, { preserveState: true, replace: true });
 };
 
 const submitCreate = () => {
   if (!createForm.name || createForm.stock < 0 || createForm.price < 0) {
-    alert("Please fill validation constraints properly (Stock/Price cannot be negative).");
+    alert("Please fill validation constraints properly.");
     return;
   }
   router.post('/products', createForm, {
@@ -151,44 +119,15 @@ const submitCreate = () => {
   });
 };
 
-const openBuyModal = (product) => {
-  selectedProd.value = product;
-  buyForm.value.goods_id = product.id;
-  buyForm.value.customer_id = '';
-  buyForm.value.quantity = 1;
-  showBuyModal.value = true;
-};
-
-const submitBuy = () => {
-  if(!buyForm.value.customer_id) {
-    alert("Please choose target customer resource entity.");
-    return;
-  }
-  if(buyForm.value.quantity > selectedProd.value.stock || buyForm.value.quantity < 1) {
-    alert("Quantity violates store inventory boundaries!");
-    return;
-  }
-  router.post(`/products/${selectedProd.value.id}/buy`, buyForm.value, {
-    onSuccess: () => showBuyModal.value = false
-  });
-};
-
 const openRestockPrompt = (product) => {
   const qty = prompt(`Enter additional stock count to add for [ ${product.name} ] :`);
   if (qty === null) return;
-  
   const intQty = parseInt(qty);
-  if (isNaN(intQty) || intQty < 0) {
-    alert("Invalid incremental addition quantity.");
-    return;
-  }
-  
+  if (isNaN(intQty) || intQty < 0) { alert("Invalid quantity."); return; }
   router.put(`/products/${product.id}`, { stock: intQty });
 };
 
 const deleteProd = (id) => {
-  if(confirm("Are you absolutely sure you want to delete this product? This action intercepts if linked with past invoicing records.")) {
-    router.delete(`/products/${id}`);
-  }
+  if(confirm("Are you sure you want to delete this product?")) { router.delete(`/products/${id}`); }
 };
 </script>

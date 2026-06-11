@@ -3,6 +3,7 @@
 namespace App\Repositories\Tenant;
 
 use App\Models\Tenant\Goods;
+use App\Models\Tenant\InvoiceItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -29,11 +30,25 @@ class ProductRepository
 
     public function getInvoicesPaginated(Goods $product, array $filters): LengthAwarePaginator
     {
-        $query = $product->invoices()->select('invoices.*')->with(['customer:id,name']);
+        $query = InvoiceItem::query()
+            ->where('goods_id', $product->id)
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->join('customers', 'invoices.customer_id', '=', 'customers.id')
+            ->select(
+                'invoices.id as id', 
+                'invoices.invoice_no as invoice_no',
+                'invoices.issue_date as issue_date',
+                'invoices.due_date as due_date',
+                'invoices.status as status',
+                'invoices.paid_amount as invoice_paid_amount',
+                'customers.name as customer_name',
+                'invoice_items.quantity as quantity',
+                'invoice_items.unit_price as unit_price',
+                'invoice_items.total_price as total_price'
+            );
 
         if (!empty($filters['customer_name'])) {
-            $query->join('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
+            $query->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
         }
 
         if (!empty($filters['invoice_no'])) {
@@ -69,7 +84,7 @@ class ProductRepository
 
     public function hasInvoices(Goods $goods): bool
     { 
-        return $goods->invoices()->exists();
+        return $goods->invoiceItems()->exists();
     }
 
     public function delete(Goods $goods): bool

@@ -11,16 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('invoices', function (Blueprint $table) {
+        Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
-            $table->string('invoice_no')->unique();
+            $table->foreignId('invoice_id')->constrained('invoices')->onDelete('cascade');
+            $table->foreignId('goods_id')->constrained('goods')->onDelete('cascade');
+            $table->integer('quantity');
+            $table->decimal('unit_price', 12, 2)->default(0.00);
             $table->decimal('total_price', 12, 2)->default(0.00);
-            $table->decimal('paid_amount', 12, 2)->default(0.00);
-            $table->string('status')->default('unpaid'); // unpaid, partial, paid
-            $table->dateTime('issue_date');
-            $table->dateTime('due_date');
             $table->timestamps();
+
+            $table->index(['invoice_id', 'goods_id']);
         });
     }
 
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('invoices');
+        Schema::dropIfExists('invoice_items');
     }
 };

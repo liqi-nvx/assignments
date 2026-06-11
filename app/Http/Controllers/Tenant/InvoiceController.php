@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PayInvoiceRequest;
+use App\Http\Requests\Tenant\StoreInvoiceRequest;
 use App\Services\Tenant\TenantInvoiceService;
 use App\Models\Tenant\Invoice;
 use Illuminate\Http\Request;
@@ -24,11 +25,25 @@ class InvoiceController extends Controller
         $filters = $request->only(['invoice_no', 'customer_name', 'goods_name', 'status', 'start_date', 'end_date']);
         
         $invoices = $this->invoiceService->getPaginatedInvoices($filters);
+        $customers = $this->invoiceService->getCustomersForSelection();
+        $goods = $this->invoiceService->getGoodsForSelection();
 
         return Inertia::render('Tenant/Invoices/Index', [
-            'invoices' => $invoices,
-            'filters'  => $filters
+            'invoices'  => $invoices,
+            'filters'   => $filters,
+            'customers' => $customers,
+            'goods'     => $goods
         ]);
+    }
+
+    public function store(StoreInvoiceRequest $request)
+    {
+        try {
+            $this->invoiceService->createInvoice($request->validated());
+            return back()->with('success', 'Invoice created successfully.');
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function show(Invoice $invoice)

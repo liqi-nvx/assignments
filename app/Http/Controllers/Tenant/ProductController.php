@@ -26,12 +26,10 @@ class ProductController extends Controller
         $filters = $request->only(['search', 'stock_status']);
 
         $products  = $this->productService->getPaginatedProducts($filters);
-        $customers = $this->productService->getCustomersForSelection();
 
         return Inertia::render('Tenant/Products/Index', [
             'products'  => $products,
             'filters'   => $filters,
-            'customers' => $customers
         ]);
     }
 
@@ -70,18 +68,6 @@ class ProductController extends Controller
             return back();
         } catch (Exception $e) {
 
-            return back()->withErrors(['error' => $e->getMessage()]);
-        }
-    }
-
-    public function buy(BuyProductRequest $request)
-    {
-        try {
-            $this->productService->buyProduct($request->validated());
-
-            return back()->with('success', 'Purchase completed and Invoice generated.');
-        } catch (Exception $e) {
-            
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

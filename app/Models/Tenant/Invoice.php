@@ -1,23 +1,26 @@
 <?php
 
 namespace App\Models\Tenant;
+
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
     protected $table = 'invoices';
     
-    protected $fillable = ['customer_id', 'goods_id', 'invoice_no', 'quantity', 'unit_price', 'total_price', 'issue_date', 'due_date', 'paid_amount', 'status'];
+    protected $fillable = ['customer_id', 'invoice_no', 'total_price', 'issue_date', 'due_date', 'paid_amount', 'status'];
 
-    public function customer() {
+    public function customer(): BelongsTo {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function goods() {
-        return $this->belongsTo(Goods::class, 'goods_id');
+    public function items(): HasMany {
+        return $this->hasMany(InvoiceItem::class, 'invoice_id');
     }
 
-    public function payments() {
+    public function payments(): HasMany {
         return $this->hasMany(Payment::class, 'invoice_id');
     }
 

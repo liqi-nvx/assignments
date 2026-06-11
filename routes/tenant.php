@@ -36,9 +36,8 @@ Route::middleware([
 
         Route::resource('customers', CustomerController::class);
         Route::resource('products', ProductController::class);
-        Route::post('products/{product}/buy', [ProductController::class, 'buy'])->name('products.buy');
         
-        Route::resource('invoices', InvoiceController::class)->only(['index', 'show']);
+        Route::resource('invoices', InvoiceController::class)->only(['index', 'show', 'store']);
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
         
         Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');

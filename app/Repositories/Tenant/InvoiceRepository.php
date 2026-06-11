@@ -9,16 +9,20 @@ class InvoiceRepository
 {
     public function getPaginated(array $filters): LengthAwarePaginator
     {
-        $query = Invoice::select('invoices.*')->with(['customer:id,name', 'goods:id,name']);
+        $query = Invoice::select('invoices.*')->with(['customer:id,name', 'items.goods:id,name']);
 
         if (!empty($filters['customer_name'])) {
             $query->join('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
+                  ->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
         }
 
         if (!empty($filters['goods_name'])) {
-            $query->join('goods', 'invoices.goods_id', '=', 'goods.id')
-                ->where('goods.name', 'ILIKE', "%{$filters['goods_name']}%");
+            $query->whereIn('invoices.id', function ($subQuery) use ($filters) {
+                $subQuery->select('invoice_items.invoice_id')
+                        ->from('invoice_items')
+                        ->join('goods', 'invoice_items.goods_id', '=', 'goods.id')
+                        ->where('goods.name', 'ILIKE', "%{$filters['goods_name']}%");
+            });
         }
 
         if (!empty($filters['invoice_no'])) {

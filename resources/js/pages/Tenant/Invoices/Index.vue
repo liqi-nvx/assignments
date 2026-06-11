@@ -4,17 +4,22 @@
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Billing & Invoices Registry</h2>
         
-        <button 
-          @click="clearFilters" 
-          :disabled="!hasFilters"
-          class="px-4 py-2 text-xs font-semibold rounded-lg border transition-all duration-200"
-          :class="{
-            'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 shadow-sm cursor-pointer': hasFilters,
-            'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': !hasFilters
-          }"
-        >
-          Clear Filters
-        </button>
+        <div class="flex items-center gap-3">
+          <button @click="openCreateModal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all duration-200">
+            + Create Invoice
+          </button>
+          <button 
+            @click="clearFilters" 
+            :disabled="!hasFilters"
+            class="px-4 py-2 text-xs font-semibold rounded-lg border transition-all duration-200"
+            :class="{
+              'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 shadow-sm cursor-pointer': hasFilters,
+              'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': !hasFilters
+            }"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
       
       <div v-if="$page.props.errors.error" class="mb-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-sm">
@@ -24,13 +29,12 @@
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <input v-model="query.invoice_no" placeholder="Invoice No..." class="border rounded p-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none" @input="debouncedFilter"/>
         <input v-model="query.customer_name" placeholder="Customer..." class="border rounded p-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none" @input="debouncedFilter"/>
-        <input v-model="query.goods_name" placeholder="Product..." class="border rounded p-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none" @input="debouncedFilter"/>
+        <input v-model="query.goods_name" placeholder="Product contains..." class="border rounded p-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none" @input="debouncedFilter"/>
         <select v-model="query.status" class="border rounded p-2 text-xs bg-white focus:ring-1 focus:ring-indigo-500 outline-none" @change="filterInvoices">
           <option value="">All Statuses</option>
           <option value="unpaid">Unpaid</option>
           <option value="partial">Partial</option>
           <option value="paid">Paid</option>
-          <option value="overdue">Overdue</option>
         </select>
         <input v-model="query.start_date" type="date" class="border rounded p-2 text-xs bg-white focus:ring-1 focus:ring-indigo-500 outline-none" @change="filterInvoices"/>
         <input v-model="query.end_date" type="date" class="border rounded p-2 text-xs bg-white focus:ring-1 focus:ring-indigo-500 outline-none" @change="filterInvoices"/>
@@ -44,10 +48,8 @@
               <th class="px-4 py-3">Issue Date</th>
               <th class="px-4 py-3">Due Date</th>
               <th class="px-4 py-3">Customer</th>
-              <th class="px-4 py-3">Product</th>
-              <th class="px-4 py-3 text-center">Qty</th>
-              <th class="px-4 py-3">Unit Price</th>
-              <th class="px-4 py-3 font-medium">Total Cost</th>
+              <th class="px-4 py-3">Products Listed</th>
+              <th class="px-4 py-3 font-medium">Total Price</th>
               <th class="px-4 py-3 font-medium">Paid Amount</th>
               <th class="px-4 py-3 text-center">Status</th>
               <th class="px-4 py-3 text-right">Settlement</th>
@@ -63,9 +65,11 @@
               <td class="px-4 py-3 whitespace-nowrap">{{ inv.issue_date }}</td>
               <td class="px-4 py-3 text-rose-600 whitespace-nowrap">{{ inv.due_date }}</td>
               <td class="px-4 py-3 font-medium text-slate-700">{{ inv.customer?.name }}</td>
-              <td class="px-4 py-3 text-indigo-600">{{ inv.goods?.name }}</td>
-              <td class="px-4 py-3 text-center font-mono">{{ inv.quantity }}</td>
-              <td class="px-4 py-3 font-mono">${{ parseFloat(inv.unit_price).toFixed(2) }}</td>
+              <td class="px-4 py-3 text-indigo-600 max-w-xs truncate">
+                <span v-for="(item, idx) in inv.items" :key="item.id">
+                  {{ item.goods?.name }} (x{{ item.quantity }}){{ idx < inv.items.length - 1 ? ', ' : '' }}
+                </span>
+              </td>
               <td class="px-4 py-3 font-mono font-semibold text-gray-900">${{ parseFloat(inv.total_price).toFixed(2) }}</td>
               <td class="px-4 py-3 font-mono text-emerald-600">${{ parseFloat(inv.paid_amount).toFixed(2) }}</td>
               <td class="px-4 py-3 text-center">
@@ -81,31 +85,85 @@
               </td>
             </tr>
             <tr v-if="invoices.data.length === 0">
-              <td colspan="11" class="px-4 py-12 text-center text-gray-400 text-sm">No billing data found matching specific filters.</td>
+              <td colspan="9" class="px-4 py-12 text-center text-gray-400 text-sm">No billing data found matching specific filters.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div v-if="invoices.links.length > 3" class="mt-4 flex justify-between items-center text-xs">
-        <div class="text-gray-500">
-          Showing entries {{ invoices.from }} to {{ invoices.to }} of {{ invoices.total }}
-        </div>
+        <div class="text-gray-500">Showing entries {{ invoices.from }} to {{ invoices.to }} of {{ invoices.total }}</div>
         <div class="flex space-x-1">
-          <Component
-            :is="link.url ? 'Link' : 'span'"
-            v-for="(link, key) in invoices.links"
-            :key="key"
-            :href="link.url"
-            class="px-2.5 py-1 rounded transition-colors"
-            :class="{
-              'bg-indigo-600 text-white font-bold': link.active,
-              'bg-white text-gray-700 hover:bg-gray-100 border': link.url && !link.active,
-              'text-gray-300 pointer-events-none border bg-gray-50': !link.url
-            }"
-          >
-            <span v-html="link.label"></span>
-          </Component>
+          <Component :is="link.url ? 'Link' : 'span'" v-for="(link, key) in invoices.links" :key="key" :href="link.url" class="px-2.5 py-1 rounded transition-colors" :class="{'bg-indigo-600 text-white font-bold': link.active, 'bg-white text-gray-700 hover:bg-gray-100 border': link.url && !link.active, 'text-gray-300 pointer-events-none border bg-gray-50': !link.url}"><span v-html="link.label"></span></Component>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showCreateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div class="bg-white rounded-xl shadow-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Create Consolidated Invoice</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Target Customer</label>
+            <select v-model="invoiceForm.customer_id" class="w-full border rounded p-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+              <option value="" disabled>-- Select a Client --</option>
+              <option v-for="cust in customers" :key="cust.id" :value="cust.id">{{ cust.name }}</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Purchase Items Collection</label>
+              <button @click="addItemRow" type="button" class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1 rounded font-bold transition-colors">
+                + Add Item Row
+              </button>
+            </div>
+
+            <div class="space-y-2 max-h-[40vh] overflow-y-auto border p-3 rounded-lg bg-slate-50/50">
+              <div v-for="(item, index) in invoiceForm.items" :key="index" class="flex gap-2 items-center bg-white border p-2 rounded shadow-sm">
+                
+                <div class="flex-1">
+                  <select v-model="item.goods_id" @change="onGoodsChange(index)" class="w-full border rounded p-1.5 text-xs bg-white focus:ring-1 focus:ring-indigo-500">
+                    <option value="" disabled>-- Select Product --</option>
+                    
+                    <option v-for="g in availableGoodsForId(index)" :key="g.id" :value="g.id">
+                      {{ g.name }} (${{ parseFloat(g.price).toFixed(2) }}) | Stock: {{ g.stock }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="w-20 text-center text-xs font-mono text-gray-500">
+                  ${{ item.price ? parseFloat(item.price).toFixed(2) : '0.00' }}
+                </div>
+
+                <div class="w-24">
+                  <input v-model.number="item.quantity" type="number" min="1" :max="item.max_stock" placeholder="Qty" class="w-full border rounded p-1.5 text-xs font-mono text-center focus:ring-1 focus:ring-indigo-500" />
+                </div>
+
+                <div class="w-24 text-right font-mono font-bold text-gray-700 text-xs px-2">
+                  ${{ (item.price * (item.quantity || 0)).toFixed(2) }}
+                </div>
+
+                <button @click="removeItemRow(index)" type="button" class="text-rose-600 hover:bg-rose-50 p-1.5 rounded transition-colors text-xs font-bold">
+                  Remove
+                </button>
+              </div>
+              <p v-if="invoiceForm.items.length === 0" class="text-center text-gray-400 text-xs py-6 italic">No products allocated. Click "+ Add Item Row" above.</p>
+            </div>
+          </div>
+          
+          <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center">
+            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Sub Total Aggregate Value</span>
+            <span class="text-2xl font-black font-mono text-emerald-400">${{ computedTotal.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-6">
+          <button @click="showCreateModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+          <button @click="submitCreateInvoice" :disabled="invoiceForm.items.length === 0" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-40 shadow-md">
+            Confirm & Save Invoice
+          </button>
         </div>
       </div>
     </div>
@@ -117,7 +175,7 @@ import AuthenticatedLayout from '@/Components/AuthenticatedLayout.vue';
 import { ref, computed } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
 
-const props = defineProps({ invoices: Object, filters: Object });
+const props = defineProps({ invoices: Object, filters: Object, customers: Array, goods: Array });
 
 const query = ref({
   invoice_no: props.filters.invoice_no || '',
@@ -128,33 +186,20 @@ const query = ref({
   end_date: props.filters.end_date || '',
 });
 
-// 计算属性：监听当前是否有任何一个筛选框被填入了内容
-const hasFilters = computed(() => {
-  return Object.values(query.value).some(value => value !== '');
-});
+const hasFilters = computed(() => Object.values(query.value).some(val => val !== ''));
 
 let debounceTimer = null;
 const debouncedFilter = () => {
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    filterInvoices();
-  }, 400);
+  debounceTimer = setTimeout(() => { filterInvoices(); }, 400);
 };
 
 const filterInvoices = () => {
   router.get('/invoices', query.value, { preserveState: true, replace: true });
 };
 
-// 执行一键重置清空
 const clearFilters = () => {
-  query.value = {
-    invoice_no: '',
-    customer_name: '',
-    goods_name: '',
-    status: '',
-    start_date: '',
-    end_date: '',
-  };
+  query.value = { invoice_no: '', customer_name: '', goods_name: '', status: '', start_date: '', end_date: '' };
   filterInvoices();
 };
 
@@ -164,30 +209,96 @@ const statusColors = (status) => {
   return 'bg-rose-100 text-rose-800';
 };
 
+// ---------------------------------
+// 新建发票的核心多商品联动控制
+// ---------------------------------
+const showCreateModal = ref(false);
+const invoiceForm = ref({ customer_id: '', items: [] });
+
+const openCreateModal = () => {
+  invoiceForm.value = { customer_id: '', items: [] };
+  addItemRow(); // 默认开一行
+  showCreateModal.value = true;
+};
+
+const addItemRow = () => {
+  invoiceForm.value.items.push({ goods_id: '', quantity: 1, price: 0.00, max_stock: 0 });
+};
+
+const removeItemRow = (index) => {
+  invoiceForm.value.items.splice(index, 1);
+};
+
+/**
+ * 🎯 真正修复后的商品过滤函数
+ * @param {number} currentIndex - 当前行的索引
+ */
+const availableGoodsForId = (currentIndex) => {
+  // 1. 关键：只收集【除当前行以外】其他行已经选了的商品 ID
+  const otherSelectedIds = invoiceForm.value.items
+    .filter((item, idx) => idx !== currentIndex && item.goods_id !== '')
+    .map(item => item.goods_id);
+
+  // 2. 过滤全局商品：只要别行没选过，当前行就可以选（包括当前行自己已经选中的那个商品）
+  return props.goods.filter(g => !otherSelectedIds.includes(g.id));
+};
+
+const onGoodsChange = (index) => {
+  const selectedId = invoiceForm.value.items[index].goods_id;
+  const match = props.goods.find(g => g.id === selectedId);
+  if (match) {
+    invoiceForm.value.items[index].price = parseFloat(match.price);
+    invoiceForm.value.items[index].max_stock = parseInt(match.stock);
+    if (invoiceForm.value.items[index].quantity > match.stock) {
+      invoiceForm.value.items[index].quantity = match.stock;
+    }
+  }
+};
+
+const computedTotal = computed(() => {
+  return invoiceForm.value.items.reduce((sum, item) => {
+    return sum + (item.price * (item.quantity || 0));
+  }, 0);
+});
+
+const submitCreateInvoice = () => {
+  if (!invoiceForm.value.customer_id) {
+    alert("Please assign a target customer.");
+    return;
+  }
+
+  // 前端边界检测校验
+  for (let i = 0; i < invoiceForm.value.items.length; i++) {
+    const item = invoiceForm.value.items[i];
+    if (!item.goods_id) {
+      alert(`Line ${i + 1} has an unselected product row.`);
+      return;
+    }
+    if (item.quantity <= 0) {
+      alert(`Line ${i + 1} quantity must be higher than 0.`);
+      return;
+    }
+    if (item.quantity > item.max_stock) {
+      alert(`Line ${i + 1} quantity exceeds warehouse stock bounds (Max: ${item.max_stock}).`);
+      return;
+    }
+  }
+
+  router.post('/invoices', invoiceForm.value, {
+    onSuccess: () => { showCreateModal.value = false; }
+  });
+};
+
 const triggerPayment = (invoice) => {
   const maxPayable = parseFloat((invoice.total_price - invoice.paid_amount).toFixed(2));
-  
-  const amt = prompt(`Enter payment settlement amount:\n(Remaining debt max limit acceptable: $${maxPayable.toFixed(2)})`);
+  const amt = prompt(`Enter payment amount (Max acceptable: $${maxPayable.toFixed(2)})`);
   if (amt === null) return;
 
   const numericRegex = /^\d+(\.\d{1,2})?$/;
-  if (!numericRegex.test(amt)) {
-    alert("Invalid character or format input! Only positive numeric amounts with up to 2 decimal places are authorized.");
+  if (!numericRegex.test(amt) || parseFloat(amt) <= 0 || parseFloat(amt) > maxPayable) {
+    alert("Invalid boundary configuration amount input parameters!");
     return;
   }
-
-  const parsed = parseFloat(amt);
-
-  if (isNaN(parsed) || parsed <= 0) {
-    alert("Payment value must be greater than zero.");
-    return;
-  }
-
-  if (parsed > maxPayable) {
-    alert(`Boundary Error: The input amount ($${parsed.toFixed(2)}) exceeds the maximum remaining balance of this invoice ($${maxPayable.toFixed(2)}).`);
-    return;
-  }
-
-  router.post(`/invoices/${invoice.id}/pay`, { paid_amount: parsed });
+  router.post(`/invoices/${invoice.id}/pay`, { paid_amount: parseFloat(amt) });
 };
 </script>
