@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Tenant\Invoice;
+use App\Models\Tenant\Payment;
+use App\Observers\Tenant\InvoiceObserver;
+use App\Observers\Tenant\PaymentObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +49,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('access-admin', function ($user) {
             return $user->role === 'admin';
         });
+
+        Invoice::observe(InvoiceObserver::class);
+        Payment::observe(PaymentObserver::class);
     }
 
     /**

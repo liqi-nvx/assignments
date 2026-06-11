@@ -12,11 +12,13 @@ class Goods extends Model
     
     protected $fillable = ['name', 'stock', 'price'];
 
-    public function invoiceItems(): HasMany {
+    public function invoiceItems(): HasMany
+    {
         return $this->hasMany(InvoiceItem::class, 'goods_id');
     }
 
-    public function invoices(): BelongsToMany {
+    public function invoices(): BelongsToMany
+    {
         return $this->belongsToMany(Invoice::class, 'invoice_items', 'goods_id', 'invoice_id')->withPivot('quantity', 'unit_price', 'total_price');
     }
 }

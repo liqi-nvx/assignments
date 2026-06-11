@@ -9,7 +9,8 @@ class Payment extends Model
     
     protected $fillable = ['invoice_id', 'payment_date', 'paid_amount', 'trans_no', 'status'];
 
-    public function invoice() {
+    public function invoice()
+    {
         return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 

@@ -40,8 +40,10 @@ class InvoiceController extends Controller
     {
         try {
             $this->invoiceService->createInvoice($request->validated());
+
             return back()->with('success', 'Invoice created successfully.');
         } catch (Exception $e) {
+            
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

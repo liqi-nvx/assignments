@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use App\Http\Controllers\Tenant\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -27,6 +28,9 @@ Route::middleware([
 
     // 租户客端：受 Sanctum / Session 保护路由
     Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('tenant.dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+
         Route::post('/logout', [AuthController::class, 'logout'])->name('tenant.logout');
         Route::get('/profile', [AuthController::class, 'editProfile'])->name('tenant.profile');
         Route::put('/profile', [AuthController::class, 'updateProfile'])->name('tenant.profile.update');

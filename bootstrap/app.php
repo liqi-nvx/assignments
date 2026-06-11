@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->redirectTo(fn (Request $request) => route('tenant.login'));
 
-        $middleware->redirectUsersTo('/products');
+        $middleware->redirectUsersTo('/');
 
         // 引入 Inertia 核心中间件
         $middleware->web(append: [

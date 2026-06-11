@@ -31,6 +31,7 @@ class SendInvoiceEmailJob implements ShouldQueue
 
         $task = InvoiceEmailTask::with('invoice.customer')->find($this->taskId);
         if (!$task || $task->status === 'success') {
+
             return;
         }
 
@@ -41,6 +42,7 @@ class SendInvoiceEmailJob implements ShouldQueue
                 'status' => 'failed',
                 'response' => 'Skipped: This tenant has not configured their Gmail SMTP settings (mail_username/mail_password) yet.'
             ]);
+            
             return;
         }
 

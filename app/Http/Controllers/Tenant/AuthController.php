@@ -42,7 +42,7 @@ class AuthController extends Controller
         if (Auth::attempt($request->validated())) {
             $this->userService->handleUserLogin($request, $request->email);
 
-            return redirect()->intended('/products');
+            return redirect()->intended('/');
         }
 
         return back()->withErrors(['email' => 'Invalid email or password credentials.']);

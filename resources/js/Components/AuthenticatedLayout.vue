@@ -4,6 +4,7 @@
       <div class="p-5">
         <h2 class="text-xl font-bold tracking-wider mb-8 text-indigo-400">TENANT PANEL</h2>
         <nav class="space-y-2">
+          <Link href="/" class="block py-2.5 px-1 rounded transition duration-200 hover:bg-slate-800">📊 Dashboard</Link>
           <Link href="/products" class="block py-2.5 px-1 rounded transition duration-200 hover:bg-slate-800">📦 Stock Management</Link>
           <Link href="/customers" class="block py-2.5 px-1 rounded transition duration-200 hover:bg-slate-800">👥 Customer Management</Link>
           <Link href="/invoices" class="block py-2.5 px-1 rounded transition duration-200 hover:bg-slate-800">🧾 Invoice Management</Link>
