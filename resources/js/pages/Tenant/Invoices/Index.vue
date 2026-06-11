@@ -156,8 +156,8 @@
       </div>
     </div>
 
-    <div v-if="showPaymentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+    <div v-if="showPaymentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full animate-fade-in">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-bold text-gray-800">Record Payment</h3>
           <span class="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded">
@@ -184,15 +184,16 @@
           <label class="block text-xs font-semibold text-gray-600 mb-1">Payment Amount ($)</label>
           <div class="relative">
             <span class="absolute left-3 top-2.5 text-gray-400 font-medium text-sm">$</span>
+            
             <input 
-              v-model.number="paymentForm.paid_amount" 
-              type="number" 
-              step="0.01" 
-              :max="maxPayableAmount"
+              v-model="paymentForm.paid_amount" 
+              type="text" 
               placeholder="0.00" 
               class="w-full border rounded pl-7 pr-16 py-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
+              @input="validatePaymentInput"
               @keyup.enter="submitPayment"
             />
+            
             <button 
               @click="setFullPayment" 
               type="button" 
@@ -323,7 +324,7 @@ const submitCreateInvoice = () => {
 };
 
 // ---------------------------------
-// 🔥 【重构】高级结账/收账 Modal 控制中心
+// 💎 强控收账 Modal 控制中心
 // ---------------------------------
 const showPaymentModal = ref(false);
 const selectedInvoice = ref(null);
@@ -336,7 +337,7 @@ const maxPayableAmount = computed(() => {
   return parseFloat((selectedInvoice.value.total_price - selectedInvoice.value.paid_amount).toFixed(2));
 });
 
-// 前端实时交互校验器
+// 前端实时交互按钮可用性校验器
 const isPaymentValid = computed(() => {
   const amt = parseFloat(paymentForm.value.paid_amount);
   return !isNaN(amt) && amt > 0 && amt <= maxPayableAmount.value;
@@ -344,7 +345,7 @@ const isPaymentValid = computed(() => {
 
 const openPaymentModal = (invoice) => {
   selectedInvoice.value = invoice;
-  paymentForm.value.paid_amount = ''; // 默认为空，给用户更清爽的输入体验
+  paymentForm.value.paid_amount = ''; 
   paymentValidationError.value = '';
   showPaymentModal.value = true;
 };
@@ -354,21 +355,54 @@ const closePaymentModal = () => {
   selectedInvoice.value = null;
 };
 
-// 快捷键：一键全额支付
+// 一键拉满全额
 const setFullPayment = () => {
-  paymentForm.value.paid_amount = maxPayableAmount.value;
+  paymentForm.value.paid_amount = maxPayableAmount.value.toString();
   paymentValidationError.value = '';
 };
 
-// 提交收账表单到后端服务层
+/**
+ * 🔒 输入层实时强力拦截核心逻辑
+ * 拒绝负数、拒绝多于2位的小数、拦截非数字字符
+ */
+const validatePaymentInput = (event) => {
+  paymentValidationError.value = '';
+  let value = event.target.value;
+
+  // 1. 清理掉所有不是“数字”或“小数点”的字符（完美拦截负号 - 、加号 +、科学计数 e）
+  value = value.replace(/[^\d.]/g, '');
+
+  // 2. 如果错输了多个小数点，只保留第一个
+  value = value.replace(/\.{2,}/g, '.');
+  value = value.replace('.', '$#$').replace(/\./g, '').replace('$#$', '.');
+
+  // 3. 🛡️ 核心强控：如果包含小数点，截断限制最多保留2位有效小数
+  if (value.indexOf('.') > -1) {
+    const parts = value.split('.');
+    if (parts[1].length > 2) {
+      parts[1] = parts[1].substring(0, 2);
+      value = parts.join('.');
+    }
+  }
+
+  // 4. 将格式化清洗后的纯净字符串安全回填给模型层与 DOM 节点
+  paymentForm.value.paid_amount = value;
+  event.target.value = value;
+
+  // 5. 动态溢出边界检测提示
+  const amt = parseFloat(value);
+  if (!isNaN(amt) && amt > maxPayableAmount.value) {
+    paymentValidationError.value = `Amount cannot exceed the remaining balance ($${maxPayableAmount.value.toFixed(2)})`;
+  }
+};
+
+// 提交收账表单到后端
 const submitPayment = () => {
   paymentValidationError.value = '';
   const amt = parseFloat(paymentForm.value.paid_amount);
 
-  // 严格的前端边界和正则控制格式
-  const numericRegex = /^\d+(\.\d{1,2})?$/;
-  if (isNaN(amt) || !numericRegex.test(paymentForm.value.paid_amount.toString()) || amt <= 0) {
-    paymentValidationError.value = "Please enter a valid monetary amount (e.g. 120.50)";
+  if (isNaN(amt) || amt <= 0) {
+    paymentValidationError.value = "Please enter a valid amount.";
     return;
   }
 
@@ -377,7 +411,6 @@ const submitPayment = () => {
     return;
   }
 
-  // 发起收账请求，向后端推送结构化数据对象
   router.post(`/invoices/${selectedInvoice.value.id}/pay`, { 
     paid_amount: amt 
   }, {
