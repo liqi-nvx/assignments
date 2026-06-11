@@ -10,6 +10,7 @@ use App\Repositories\Tenant\InvoiceEmailTaskRepository;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Goods;
 use App\Models\Tenant\Customer;
+use App\Models\Tenant\InvoiceOverdueTask;
 use App\Models\Tenant\Payment;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -143,6 +144,29 @@ class TenantInvoiceService
                 'trans_no'     => Payment::generateTransNo(),
                 'status'       => 1
             ]);
+        });
+    }
+
+    public function processOverdue(int $taskId)
+    {
+        $task = InvoiceOverdueTask::find($taskId);
+        if (!$task || $task->status === 'success') return;
+
+        $task->update(['status' => 'processing']);
+
+        DB::transaction(function () use ($task) {
+            $invoice = Invoice::where('id', $task->invoice_id)->lockForUpdate()->first();
+            
+            if (!$invoice) {
+                throw new Exception("Invoice ID [{$task->invoice_id}] not found.");
+            }
+
+            if ($invoice->due_date < now()->toDateTimeString() && $invoice->paid_amount < $invoice->total_price) {
+                $invoice->update(['status' => 'overdue']);
+                $task->update(['status' => 'success', 'response' => 'Invoice status successfully updated to overdue.']);
+            } else {
+                $task->update(['status' => 'success', 'response' => 'Skipped: Invoice is either paid or not yet due.']);
+            }
         });
     }
 }
