@@ -3,8 +3,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\CustomerRequest;
-use App\Repositories\Tenant\CustomerRepository;
-use App\Services\Tenant\TenantBusinessService;
+use App\Services\Tenant\TenantCustomerService;
 use App\Models\Tenant\Customer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,41 +11,43 @@ use Exception;
 
 class CustomerController extends Controller
 {
-    protected CustomerRepository $customerRepo;
-    protected TenantBusinessService $businessService;
+    protected TenantCustomerService $customerService;
 
-    public function __construct(CustomerRepository $customerRepo, TenantBusinessService $businessService)
+    public function __construct(TenantCustomerService $customerService)
     {
-        $this->customerRepo = $customerRepo;
-        $this->businessService = $businessService;
+        $this->customerService = $customerService;
     }
 
     public function index(Request $request)
     {
-        $filters = $request->only(['search']);
-        $customers = $this->customerRepo->getPaginated($filters);
+        $filters = $request->only(['name', 'email', 'phone']);
+        $customers = $this->customerService->getCustomersPaginated($filters);
+
         return Inertia::render('Tenant/Customers/Index', ['customers' => $customers, 'filters' => $filters]);
     }
 
     public function store(CustomerRequest $request)
     {
-        $this->customerRepo->create($request->validated());
+        $this->customerService->createCustomer($request->validated());
+
         return back();
     }
 
     public function update(CustomerRequest $request, Customer $customer)
     {
-        $data = $request->validated();
-        $this->customerRepo->update($customer, $data);
+        $this->customerService->updateCustomer($customer, $request->validated());
+
         return back();
     }
 
     public function destroy(Customer $customer)
     {
         try {
-            $this->businessService->deleteCustomer($customer);
+            $this->customerService->deleteCustomer($customer);
+
             return back();
         } catch (Exception $e) {
+            
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

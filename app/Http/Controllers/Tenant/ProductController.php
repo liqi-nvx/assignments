@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Services\Tenant\TenantProductService;
+use App\Http\Requests\Tenant\StoreProductRequest;
+use App\Http\Requests\Tenant\UpdateProductStockRequest;
 use App\Http\Requests\Tenant\BuyProductRequest;
-use App\Repositories\Tenant\ProductRepository;
-use App\Repositories\Tenant\CustomerRepository;
-use App\Services\Tenant\TenantBusinessService;
 use App\Models\Tenant\Goods;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,63 +14,62 @@ use Exception;
 
 class ProductController extends Controller
 {
-    protected ProductRepository $productRepo;
-    protected TenantBusinessService $businessService;
+    protected TenantProductService $productService;
 
-    public function __construct(ProductRepository $productRepo, TenantBusinessService $businessService)
+    public function __construct(TenantProductService $productService)
     {
-        $this->productRepo = $productRepo;
-        $this->businessService = $businessService;
+        $this->productService = $productService;
     }
 
     public function index(Request $request)
     {
         $filters = $request->only(['search', 'stock_status']);
-        $products = $this->productRepo->getPaginated($filters);
-        // 获取全部顾客供购买弹窗下拉选择
-        $customers = \App\Models\Tenant\Customer::all(['id', 'name']);
+
+        $products  = $this->productService->getPaginatedProducts($filters);
+        $customers = $this->productService->getCustomersForSelection();
 
         return Inertia::render('Tenant/Products/Index', [
-            'products' => $products,
-            'filters' => $filters,
+            'products'  => $products,
+            'filters'   => $filters,
             'customers' => $customers
         ]);
     }
 
     public function show(Goods $product, Request $request)
     {
-        $filters = $request->only(['search']);
-        // 核心快速查询：不产生N+1的分页单品发票历史
-        $invoices = $this->productRepo->getInvoicesPaginated($product, $filters);
+        $filters = $request->only(['invoice_no', 'customer_name', 'status', 'start_date', 'end_date']);
+        
+        $invoices = $this->productService->getPaginatedInvoicesForProduct($product, $filters);
 
         return Inertia::render('Tenant/Products/Show', [
-            'product' => $product,
+            'product'  => $product,
             'invoices' => $invoices,
-            'filters' => $filters
+            'filters'  => $filters
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $data = $request->validate(['name' => 'required', 'stock' => 'required|integer', 'price' => 'required|numeric']);
-        $this->productRepo->create($data);
-        return back();
+        $this->productService->createProduct($request->validated());
+
+        return back()->with('success', 'Product created successfully.');
     }
 
-    public function update(Request $request, Goods $product)
+    public function update(UpdateProductStockRequest $request, Goods $product)
     {
-        // 仅能追补和追加库存数 (加 Stock Only)
-        $data = $request->validate(['stock' => 'required|integer|min:0']);
-        $this->productRepo->update($product, ['stock' => $product->stock + $data['stock']]);
-        return back();
+        $this->productService->restockProduct($product, $request->validated()['stock']);
+
+        return back()->with('success', 'Stock updated successfully.');
     }
 
     public function destroy(Goods $product)
     {
         try {
-            $this->businessService->deleteProduct($product);
+            $this->productService->deleteProduct($product);
+
             return back();
         } catch (Exception $e) {
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -77,9 +77,11 @@ class ProductController extends Controller
     public function buy(BuyProductRequest $request)
     {
         try {
-            $this->businessService->buyProduct($request->validated());
-            return back();
+            $this->productService->buyProduct($request->validated());
+
+            return back()->with('success', 'Purchase completed and Invoice generated.');
         } catch (Exception $e) {
+            
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

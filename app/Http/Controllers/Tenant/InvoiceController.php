@@ -1,10 +1,10 @@
 <?php
+
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\PayInvoiceRequest;
-use App\Repositories\Tenant\InvoiceRepository;
-use App\Services\Tenant\TenantBusinessService;
+use App\Services\Tenant\TenantInvoiceService;
 use App\Models\Tenant\Invoice;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,19 +12,18 @@ use Exception;
 
 class InvoiceController extends Controller
 {
-    protected InvoiceRepository $invoiceRepo;
-    protected TenantBusinessService $businessService;
+    protected TenantInvoiceService $invoiceService;
 
-    public function __construct(InvoiceRepository $invoiceRepo, TenantBusinessService $businessService)
+    public function __construct(TenantInvoiceService $invoiceService)
     {
-        $this->invoiceRepo = $invoiceRepo;
-        $this->businessService = $businessService;
+        $this->invoiceService = $invoiceService;
     }
 
     public function index(Request $request)
     {
         $filters = $request->only(['invoice_no', 'customer_name', 'goods_name', 'status', 'start_date', 'end_date']);
-        $invoices = $this->invoiceRepo->getPaginated($filters);
+        
+        $invoices = $this->invoiceService->getPaginatedInvoices($filters);
 
         return Inertia::render('Tenant/Invoices/Index', [
             'invoices' => $invoices,
@@ -32,12 +31,25 @@ class InvoiceController extends Controller
         ]);
     }
 
+    public function show(Invoice $invoice)
+    {
+        $invoiceDetails = $this->invoiceService->getInvoiceDetails($invoice);
+        $payments       = $this->invoiceService->getPaymentsForInvoice($invoice->id);
+
+        return Inertia::render('Tenant/Invoices/Show', [
+            'invoice'  => $invoiceDetails,
+            'payments' => $payments
+        ]);
+    }
+
     public function pay(PayInvoiceRequest $request, Invoice $invoice)
     {
         try {
-            $this->businessService->payInvoice($invoice, $request->validated());
-            return back();
+            $this->invoiceService->payInvoice($invoice, $request->validated());
+
+            return back()->with('success', 'Payment applied successfully.');
         } catch (Exception $e) {
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

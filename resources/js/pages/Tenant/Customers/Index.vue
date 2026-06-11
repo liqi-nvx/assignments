@@ -8,14 +8,42 @@
         </button>
         </div>
 
-        <div class="mb-4 flex items-center">
-        <input 
-            v-model="searchQuery" 
-            @input="handleSearch"
-            type="text" 
-            placeholder="输入客户名称或邮箱搜索..." 
-            class="border border-gray-300 rounded px-4 py-2 w-80 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg border border-gray-100">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">客户姓名</label>
+            <input 
+                v-model="searchFilters.name" 
+                @input="handleSearch"
+                type="text" 
+                placeholder="搜索姓名..." 
+                class="border border-gray-300 rounded px-3 py-1.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">电子邮箱</label>
+            <input 
+                v-model="searchFilters.email" 
+                @input="handleSearch"
+                type="text" 
+                placeholder="搜索邮箱..." 
+                class="border border-gray-300 rounded px-3 py-1.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">手机号码</label>
+            <input 
+                v-model="searchFilters.phone" 
+                @input="handleSearch"
+                type="text" 
+                placeholder="搜索手机号..." 
+                class="border border-gray-300 rounded px-3 py-1.5 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <button @click="clearFilters" class="text-sm text-gray-500 hover:text-blue-600 underline">
+              清空筛选条件
+            </button>
+          </div>
         </div>
 
         <div v-if="$page.props.errors.error" class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -109,7 +137,7 @@
 
 <script setup>
 import AuthenticatedLayout from '@/Components/AuthenticatedLayout.vue';
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import debounce from 'lodash/debounce'; // 如果没有装 lodash，可以直接用普通函数替代
 
@@ -118,7 +146,12 @@ const props = defineProps({
   filters: Object
 });
 
-const searchQuery = ref(props.filters.search || '');
+const searchFilters = reactive({
+  name: props.filters.name || '',
+  email: props.filters.email || '',
+  phone: props.filters.phone || ''
+});
+
 const showModal = ref(false);
 const isEdit = ref(false);
 const currentCustomerId = ref(null);
@@ -132,8 +165,15 @@ const form = useForm({
 
 // 防抖搜索处理
 const handleSearch = debounce(() => {
-  router.get('/customers', { search: searchQuery.value }, { preserveState: true, replace: true });
+  router.get('/customers', searchFilters, { preserveState: true, replace: true });
 }, 400);
+
+const clearFilters = () => {
+  searchFilters.name = '';
+  searchFilters.email = '';
+  searchFilters.phone = '';
+  handleSearch();
+};
 
 const openCreateModal = () => {
   isEdit.value = false;

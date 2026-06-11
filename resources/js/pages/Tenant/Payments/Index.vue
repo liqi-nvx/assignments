@@ -1,111 +1,138 @@
 <template>
   <AuthenticatedLayout>
     <div class="p-6 max-w-7xl mx-auto">
-        <div class="mb-6">
+      
+      <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">财务收款记录 (Payments)</h1>
-        </div>
+        
+        <button 
+          @click="resetFilters" 
+          :disabled="!hasFilters"
+          class="px-4 py-2 text-xs font-semibold rounded-lg border transition-all duration-200"
+          :class="{
+            'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 shadow-sm cursor-pointer': hasFilters,
+            'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed opacity-60': !hasFilters
+          }"
+        >
+          Clear Filters
+        </button>
+      </div>
 
-        <div class="bg-white p-4 rounded-lg shadow mb-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+      <div class="bg-white p-4 rounded-lg shadow border mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">交易单号</label>
-            <input 
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Trans No</label>
+          <input 
             v-model="searchFilters.trans_no" 
             type="text" 
-            placeholder="搜索交易单号..." 
-            class="border rounded px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            placeholder="Search Trans No..." 
+            class="border rounded px-3 py-1.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            @input="debouncedFilter"
+          />
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">金额 (等于/大于)</label>
-            <input 
-            v-model="searchFilters.paid_amount" 
-            type="number" 
-            step="0.01"
-            placeholder="输入金额..." 
-            class="border rounded px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice No</label>
+          <input 
+            v-model="searchFilters.invoice_no" 
+            type="text" 
+            placeholder="Search Invoice No..." 
+            class="border rounded px-3 py-1.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            @input="debouncedFilter"
+          />
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">开始日期</label>
-            <input 
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Start Date</label>
+          <input 
             v-model="searchFilters.start_date" 
             type="date" 
-            class="border rounded px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            class="border rounded px-3 py-1.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+            @change="submitSearch"
+          />
         </div>
         <div>
-            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">结束日期</label>
-            <input 
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">End Date</label>
+          <input 
             v-model="searchFilters.end_date" 
             type="date" 
-            class="border rounded px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            class="border rounded px-3 py-1.5 text-xs w-full focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+            @change="submitSearch"
+          />
         </div>
-        <div class="flex space-x-2">
-            <button @click="submitSearch" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded shadow">
-            筛选
-            </button>
-            <button @click="resetFilters" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium py-2 px-3 rounded">
-            重置
-            </button>
-        </div>
-        </div>
+      </div>
 
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+      <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 text-xs text-left">
+          <thead class="bg-slate-50 text-slate-700 uppercase font-semibold">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">流水ID</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">交易单号 (Trans No)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">关联发票ID</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">实付金额</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">付款时间</th>
+              <th class="px-6 py-3">Transaction No</th>
+              <th class="px-6 py-3">Invoice No</th>
+              <th class="px-6 py-3">Payment Date</th>
+              <th class="px-6 py-3">Paid Amount</th>
+              <th class="px-6 py-3 text-center">Status</th>
             </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-            <tr v-for="payment in payments.data" :key="payment.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{{ payment.id }}</td>
-                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-900 font-semibold">{{ payment.trans_no }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline">
-                <Link :href="`/invoices/${payment.invoice_id}`">查看发票 #{{ payment.invoice_id }}</Link>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+          </thead>
+          <tbody class="divide-y divide-gray-100 text-gray-600">
+            <tr v-for="payment in payments.data" :key="payment.id" class="hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 font-mono font-bold text-gray-900">{{ payment.trans_no }}</td>
+              
+              <td class="px-6 py-4 font-mono font-bold">
+                <Link 
+                  v-if="payment.invoice" 
+                  :href="`/invoices/${payment.invoice_id}`" 
+                  class="text-indigo-600 hover:text-indigo-900 hover:underline"
+                >
+                  {{ payment.invoice.invoice_no }}
+                </Link>
+                <span v-else class="text-gray-400 italic">N/A</span>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap">{{ payment.payment_date }}</td>
+              
+              <td class="px-6 py-4 font-mono font-bold text-emerald-600">
                 ${{ parseFloat(payment.paid_amount).toFixed(2) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ formatDate(payment.created_at) }}</td>
+              </td>
+              
+              <td class="px-6 py-4 text-center">
+                <span v-if="payment.status === 1" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  Success
+                </span>
+                <span v-else class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  Failed
+                </span>
+              </td>
             </tr>
+            
             <tr v-if="payments.data.length === 0">
-                <td colspan="5" class="px-6 py-10 text-center text-gray-500">在当前筛选条件下没有查到任何收款流水</td>
+              <td colspan="5" class="px-6 py-12 text-center text-gray-400">No payment records match the filter logic.</td>
             </tr>
-            </tbody>
+          </tbody>
         </table>
-        </div>
+      </div>
 
-        <div class="mt-4 flex justify-between items-center" v-if="payments.links && payments.links.length > 3">
-        <div class="text-sm text-gray-600">当前页共 {{ payments.data.length }} 条，总计 {{ payments.total }} 条</div>
+      <div class="mt-4 flex justify-between items-center text-xs" v-if="payments.links && payments.links.length > 3">
+        <div class="text-gray-500">Showing entries {{ payments.from }} to {{ payments.to }} of {{ payments.total }}</div>
         <div class="flex space-x-1">
-            <Link 
+          <Link 
             v-for="(link, index) in payments.links" 
             :key="index"
             :href="link.url || '#'"
-            class="px-3 py-1 border rounded text-sm"
+            class="px-2.5 py-1 border rounded transition-colors"
             :class="{
-                'bg-blue-600 text-white': link.active, 
-                'text-gray-600 hover:bg-gray-50': !link.active, 
-                'opacity-50 pointer-events-none': !link.url
+              'bg-indigo-600 text-white font-bold border-indigo-600': link.active, 
+              'bg-white text-gray-700 hover:bg-gray-100': !link.active, 
+              'text-gray-300 border-gray-100 bg-gray-50 pointer-events-none': !link.url
             }"
-            >
+          >
             <span v-html="link.label"></span>
-            </Link>
+          </Link>
         </div>
-        </div>
+      </div>
     </div>
   </AuthenticatedLayout>
 </template>
 
 <script setup>
 import AuthenticatedLayout from '@/Components/AuthenticatedLayout.vue';
-import { reactive } from 'vue';
+import { ref, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -113,32 +140,41 @@ const props = defineProps({
   filters: Object
 });
 
-// 初始化过滤状态
-const searchFilters = reactive({
+// 使用响应式引用进行绑定
+const searchFilters = ref({
   trans_no: props.filters.trans_no || '',
-  paid_amount: props.filters.paid_amount || '',
+  invoice_no: props.filters.invoice_no || '',
   start_date: props.filters.start_date || '',
   end_date: props.filters.end_date || ''
 });
 
-// 点击筛选执行请求
+// 动态追踪是否有任意筛选正在发生作用
+const hasFilters = computed(() => {
+  return Object.values(searchFilters.value).some(val => val !== '');
+});
+
+// 防抖节流引擎
+let debounceTimer = null;
+const debouncedFilter = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    submitSearch();
+  }, 400);
+};
+
+// 提交过滤请求
 const submitSearch = () => {
-  router.get('/payments', searchFilters, { preserveState: true, replace: true });
+  router.get('/payments', searchFilters.value, { preserveState: true, replace: true });
 };
 
-// 重置过滤器
+// 一键清空并重装载
 const resetFilters = () => {
-  searchFilters.trans_no = '';
-  searchFilters.paid_amount = '';
-  searchFilters.start_date = '';
-  searchFilters.end_date = '';
-  router.get('/payments', {}, { replace: true });
-};
-
-// 格式化日期小工具
-const formatDate = (dateString) => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleString();
+  searchFilters.value = {
+    trans_no: '',
+    invoice_no: '',
+    start_date: '',
+    end_date: ''
+  };
+  submitSearch();
 };
 </script>

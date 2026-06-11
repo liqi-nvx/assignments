@@ -2,24 +2,45 @@
 namespace App\Repositories\Tenant;
 
 use App\Models\Tenant\Payment;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 
 class PaymentRepository
 {
     public function getPaginated(array $filters): LengthAwarePaginator
     {
-        $query = Payment::query();
+        $query = Payment::select('payments.*')->with(['invoice:id,invoice_no']);
+
+        if (!empty($filters['invoice_no'])) {
+            $query->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+                ->where('invoices.invoice_no', 'ILIKE', "%{$filters['invoice_no']}%");
+        }
 
         if (!empty($filters['trans_no'])) {
-            $query->where('trans_no', 'ILIKE', "%{$filters['trans_no']}%");
-        }
-        if (!empty($filters['paid_amount'])) {
-            $query->where('paid_amount', $filters['paid_amount']);
-        }
-        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $query->whereBetween('payment_date', [$filters['start_date'], $filters['end_date']]);
+            $query->where('payments.trans_no', 'ILIKE', "%{$filters['trans_no']}%");
         }
 
-        return $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
+        if (!empty($filters['start_date'])) {
+            $startDate = Carbon::parse($filters['start_date'])->startOfDay()->toDateTimeString();
+            $query->where('payments.payment_date', '>=', $startDate);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $endDate = Carbon::parse($filters['end_date'])->endOfDay()->toDateTimeString();
+            $query->where('payments.payment_date', '<=', $endDate);
+        }
+
+        return $query->orderBy('payments.id', 'desc')->paginate(10)->withQueryString();
+    }
+
+    public function getPaymentsByInvoiceId(int $invoiceId): Collection
+    {
+        return Payment::where('invoice_id', $invoiceId)->orderBy('id', 'desc')->get();
+    }
+
+    public function create(array $data): Payment
+    {
+        return Payment::create($data);
     }
 }

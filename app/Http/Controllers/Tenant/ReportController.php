@@ -2,16 +2,28 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\Tenant\ReportRepository;
+use App\Services\Tenant\TenantReportService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ReportController extends Controller
 {
-    public function salesReport(Request $request, ReportRepository $repo)
+    protected TenantReportService $reportService;
+
+    public function __construct(TenantReportService $reportService)
     {
-        $filters = $request->only(['start_date', 'end_date']);
-        $reportData = $repo->getSalesReportData($filters);
-        return Inertia::render('Tenant/Reports/Sales', ['report' => $reportData, 'filters' => $filters]);
+        $this->reportService = $reportService;
+    }
+
+    public function salesReport(Request $request)
+    {
+        $filters = $request->only(['invoice_no', 'customer_name', 'start_date', 'end_date']);
+        
+        $reportData = $this->reportService->generateSalesReport($filters);
+
+        return Inertia::render('Tenant/Reports/Sales', [
+            'report'  => $reportData,
+            'filters' => $filters
+        ]);
     }
 }

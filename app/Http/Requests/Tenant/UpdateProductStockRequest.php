@@ -1,22 +1,20 @@
 <?php
+
 namespace App\Http\Requests\Tenant;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CustomerRequest extends FormRequest
+class UpdateProductStockRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
     }
-    
+
     public function rules(): array
     {
         return [
-            'name'    => ['required'],
-            'email'   => ['required', 'email'],
-            'phone'   => ['required'],
-            'address' => ['nullable'],
+            'stock' => 'required|integer|min:0'
         ];
     }
 }
