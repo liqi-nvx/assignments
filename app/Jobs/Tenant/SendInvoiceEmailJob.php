@@ -3,6 +3,7 @@
 namespace App\Jobs\Tenant;
 
 use App\Models\Tenant\InvoiceEmailTask;
+use App\Services\Tenant\TenantMailConfigService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -33,6 +34,16 @@ class SendInvoiceEmailJob implements ShouldQueue
             return;
         }
 
+        $isConfigured = TenantMailConfigService::setTenantMailConfig();
+
+        if (!$isConfigured) {
+            $task->update([
+                'status' => 'failed',
+                'response' => 'Skipped: This tenant has not configured their Gmail SMTP settings (mail_username/mail_password) yet.'
+            ]);
+            return;
+        }
+
         $task->update(['status' => 'processing']);
 
         try {
@@ -53,7 +64,7 @@ class SendInvoiceEmailJob implements ShouldQueue
 
             $task->update([
                 'status' => 'success',
-                'response' => 'Email dispatched successfully to ' . $task->customer_email
+                'response' => 'Email dispatched successfully via Tenant private Gmail to ' . $task->customer_email
             ]);
 
         } catch (Exception $e) {

@@ -7,6 +7,7 @@ use App\Models\Tenant\InvoiceOverdueTask;
 use App\Jobs\Tenant\ProcessInvoiceOverdue;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use App\Models\Tenant;
 
 class ScanOverdueInvoices extends Command
 {
@@ -17,7 +18,7 @@ class ScanOverdueInvoices extends Command
     {
         $this->info('Starting scan for overdue invoices...');
 
-        $tenants = tenancy()->getTenantModel()::all(); 
+        $tenants = Tenant::all();
 
         foreach ($tenants as $tenant) {
             $this->info("Scanning database for Tenant: {$tenant->id}");

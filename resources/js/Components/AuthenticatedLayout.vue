@@ -10,6 +10,7 @@
           <Link href="/payments" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-slate-800">💰 Payment Records</Link>
           <Link href="/sales-report" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-slate-800">📊 Financial Reports</Link>
           <Link href="/profile" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-slate-800">⚙️ Edit Profile</Link>
+          <Link href="/settings" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-slate-800">⚙️ Mail Settings</Link>
         </nav>
       </div>
       <div class="p-4 border-t border-slate-800">

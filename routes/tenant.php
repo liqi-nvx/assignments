@@ -8,6 +8,7 @@ use App\Http\Controllers\Tenant\AuthController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\InvoiceController;
+use App\Http\Controllers\Tenant\MailSettingController;
 use App\Http\Controllers\Tenant\PaymentController;
 use App\Http\Controllers\Tenant\ReportController;
 
@@ -29,6 +30,9 @@ Route::middleware([
         Route::post('/logout', [AuthController::class, 'logout'])->name('tenant.logout');
         Route::get('/profile', [AuthController::class, 'editProfile'])->name('tenant.profile');
         Route::put('/profile', [AuthController::class, 'updateProfile'])->name('tenant.profile.update');
+
+        Route::get('/settings', [MailSettingController::class, 'edit'])->name('tenant.settings.edit');
+        Route::put('/settings', [MailSettingController::class, 'update'])->name('tenant.settings.update');
 
         Route::resource('customers', CustomerController::class);
         Route::resource('products', ProductController::class);

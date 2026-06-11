@@ -7,6 +7,7 @@ use App\Models\Tenant\Customer;
 use App\Repositories\Tenant\ProductRepository;
 use App\Repositories\Tenant\InvoiceRepository;
 use App\Repositories\Tenant\CustomerRepository;
+use App\Repositories\Tenant\InvoiceEmailTaskRepository;
 use App\Models\Tenant\Goods;
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\InvoiceEmailTask;
@@ -20,15 +21,18 @@ class TenantProductService
     protected ProductRepository $productRepo;
     protected InvoiceRepository $invoiceRepo;
     protected CustomerRepository $customerRepo;
+    protected InvoiceEmailTaskRepository $emailTaskRepo;
 
     public function __construct(
         ProductRepository $productRepo,
         InvoiceRepository $invoiceRepo,
-        CustomerRepository $customerRepo
+        CustomerRepository $customerRepo,
+        InvoiceEmailTaskRepository $emailTaskRepo,
     ) {
-        $this->productRepo  = $productRepo;
-        $this->invoiceRepo  = $invoiceRepo;
-        $this->customerRepo = $customerRepo;
+        $this->productRepo   = $productRepo;
+        $this->invoiceRepo   = $invoiceRepo;
+        $this->customerRepo  = $customerRepo;
+        $this->emailTaskRepo = $emailTaskRepo;
     }
 
     public function getPaginatedProducts(array $filters): LengthAwarePaginator
@@ -93,13 +97,11 @@ class TenantProductService
             ]);
 
             $customer = Customer::findOrFail($data['customer_id']);
-            $customerEmail = $customer->email;
 
-            $emailTask = InvoiceEmailTask::create([
+            $emailTask = $this->emailTaskRepo->create([
                 'invoice_id'     => $invoice->id,
-                'customer_email' => $customerEmail,
-                'status'         => 'pending',
-                'response'       => null
+                'customer_email' => $customer->email,
+                'status'         => 'pending'
             ]);
 
             $currentTenantId = tenant('id'); 
