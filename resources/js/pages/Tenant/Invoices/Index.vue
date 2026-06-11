@@ -3,7 +3,6 @@
     <div class="bg-white p-6 rounded-lg shadow-md">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Billing & Invoices Registry</h2>
-        
         <div class="flex items-center gap-3">
           <button @click="openCreateModal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all duration-200">
             + Create Invoice
@@ -22,7 +21,7 @@
         </div>
       </div>
       
-      <div v-if="$page.props.errors.error" class="mb-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-sm">
+      <div v-if="$page.props.errors.error && !showPaymentModal" class="mb-4 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-sm">
         {{ $page.props.errors.error }}
       </div>
 
@@ -78,7 +77,7 @@
                 </span>
               </td>
               <td class="px-4 py-3 text-right whitespace-nowrap">
-                <button v-if="inv.status !== 'paid'" @click="triggerPayment(inv)" class="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors font-medium text-[11px]">
+                <button v-if="inv.status !== 'paid'" @click="openPaymentModal(inv)" class="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors font-medium text-[11px]">
                   Pay
                 </button>
                 <span v-else class="text-gray-400 italic text-[11px] select-none">Settled</span>
@@ -99,10 +98,9 @@
       </div>
     </div>
 
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+    <div v-if="showCreateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-xl shadow-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Create Consolidated Invoice</h3>
-        
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">Target Customer</label>
@@ -111,7 +109,6 @@
               <option v-for="cust in customers" :key="cust.id" :value="cust.id">{{ cust.name }}</option>
             </select>
           </div>
-
           <div>
             <div class="flex justify-between items-center mb-2">
               <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Purchase Items Collection</label>
@@ -119,32 +116,25 @@
                 + Add Item Row
               </button>
             </div>
-
             <div class="space-y-2 max-h-[40vh] overflow-y-auto border p-3 rounded-lg bg-slate-50/50">
               <div v-for="(item, index) in invoiceForm.items" :key="index" class="flex gap-2 items-center bg-white border p-2 rounded shadow-sm">
-                
                 <div class="flex-1">
                   <select v-model="item.goods_id" @change="onGoodsChange(index)" class="w-full border rounded p-1.5 text-xs bg-white focus:ring-1 focus:ring-indigo-500">
                     <option value="" disabled>-- Select Product --</option>
-                    
                     <option v-for="g in availableGoodsForId(index)" :key="g.id" :value="g.id">
                       {{ g.name }} (${{ parseFloat(g.price).toFixed(2) }}) | Stock: {{ g.stock }}
                     </option>
                   </select>
                 </div>
-
                 <div class="w-20 text-center text-xs font-mono text-gray-500">
                   ${{ item.price ? parseFloat(item.price).toFixed(2) : '0.00' }}
                 </div>
-
                 <div class="w-24">
                   <input v-model.number="item.quantity" type="number" min="1" :max="item.max_stock" placeholder="Qty" class="w-full border rounded p-1.5 text-xs font-mono text-center focus:ring-1 focus:ring-indigo-500" />
                 </div>
-
                 <div class="w-24 text-right font-mono font-bold text-gray-700 text-xs px-2">
                   ${{ (item.price * (item.quantity || 0)).toFixed(2) }}
                 </div>
-
                 <button @click="removeItemRow(index)" type="button" class="text-rose-600 hover:bg-rose-50 p-1.5 rounded transition-colors text-xs font-bold">
                   Remove
                 </button>
@@ -152,17 +142,78 @@
               <p v-if="invoiceForm.items.length === 0" class="text-center text-gray-400 text-xs py-6 italic">No products allocated. Click "+ Add Item Row" above.</p>
             </div>
           </div>
-          
           <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center">
             <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Sub Total Aggregate Value</span>
             <span class="text-2xl font-black font-mono text-emerald-400">${{ computedTotal.toFixed(2) }}</span>
           </div>
         </div>
-
         <div class="flex justify-end gap-2 mt-6">
           <button @click="showCreateModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
           <button @click="submitCreateInvoice" :disabled="invoiceForm.items.length === 0" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-40 shadow-md">
             Confirm & Save Invoice
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showPaymentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-gray-800">Record Payment</h3>
+          <span class="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded">
+            {{ selectedInvoice?.invoice_no }}
+          </span>
+        </div>
+
+        <div v-if="$page.props.errors.error" class="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs">
+          {{ $page.props.errors.error }}
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-lg text-xs">
+          <div>
+            <span class="text-gray-400 block">Total Price</span>
+            <span class="font-mono font-bold text-gray-900">${{ parseFloat(selectedInvoice?.total_price).toFixed(2) }}</span>
+          </div>
+          <div>
+            <span class="text-gray-400 block">Remaining Due</span>
+            <span class="font-mono font-bold text-rose-600">${{ maxPayableAmount.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Payment Amount ($)</label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-gray-400 font-medium text-sm">$</span>
+            <input 
+              v-model.number="paymentForm.paid_amount" 
+              type="number" 
+              step="0.01" 
+              :max="maxPayableAmount"
+              placeholder="0.00" 
+              class="w-full border rounded pl-7 pr-16 py-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500 outline-none"
+              @keyup.enter="submitPayment"
+            />
+            <button 
+              @click="setFullPayment" 
+              type="button" 
+              class="absolute right-2 top-2 text-[10px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-2 py-1 rounded"
+            >
+              Pay Full
+            </button>
+          </div>
+          <p v-if="paymentValidationError" class="text-rose-600 text-[11px] mt-1 font-medium">{{ paymentValidationError }}</p>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button @click="closePaymentModal" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-medium">
+            Cancel
+          </button>
+          <button 
+            @click="submitPayment" 
+            :disabled="!isPaymentValid" 
+            class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs font-medium shadow-md disabled:opacity-40"
+          >
+            Submit Payment
           </button>
         </div>
       </div>
@@ -177,6 +228,7 @@ import { router, Link } from '@inertiajs/vue3';
 
 const props = defineProps({ invoices: Object, filters: Object, customers: Array, goods: Array });
 
+// 搜索栏筛选状态
 const query = ref({
   invoice_no: props.filters.invoice_no || '',
   customer_name: props.filters.customer_name || '',
@@ -210,14 +262,14 @@ const statusColors = (status) => {
 };
 
 // ---------------------------------
-// 新建发票的核心多商品联动控制
+// 新建发票的多商品控制
 // ---------------------------------
 const showCreateModal = ref(false);
 const invoiceForm = ref({ customer_id: '', items: [] });
 
 const openCreateModal = () => {
   invoiceForm.value = { customer_id: '', items: [] };
-  addItemRow(); // 默认开一行
+  addItemRow();
   showCreateModal.value = true;
 };
 
@@ -229,17 +281,10 @@ const removeItemRow = (index) => {
   invoiceForm.value.items.splice(index, 1);
 };
 
-/**
- * 🎯 真正修复后的商品过滤函数
- * @param {number} currentIndex - 当前行的索引
- */
 const availableGoodsForId = (currentIndex) => {
-  // 1. 关键：只收集【除当前行以外】其他行已经选了的商品 ID
   const otherSelectedIds = invoiceForm.value.items
     .filter((item, idx) => idx !== currentIndex && item.goods_id !== '')
     .map(item => item.goods_id);
-
-  // 2. 过滤全局商品：只要别行没选过，当前行就可以选（包括当前行自己已经选中的那个商品）
   return props.goods.filter(g => !otherSelectedIds.includes(g.id));
 };
 
@@ -266,39 +311,80 @@ const submitCreateInvoice = () => {
     alert("Please assign a target customer.");
     return;
   }
-
-  // 前端边界检测校验
   for (let i = 0; i < invoiceForm.value.items.length; i++) {
     const item = invoiceForm.value.items[i];
-    if (!item.goods_id) {
-      alert(`Line ${i + 1} has an unselected product row.`);
-      return;
-    }
-    if (item.quantity <= 0) {
-      alert(`Line ${i + 1} quantity must be higher than 0.`);
-      return;
-    }
-    if (item.quantity > item.max_stock) {
-      alert(`Line ${i + 1} quantity exceeds warehouse stock bounds (Max: ${item.max_stock}).`);
-      return;
-    }
+    if (!item.goods_id) { alert(`Line ${i + 1} has an unselected product row.`); return; }
+    if (item.quantity <= 0) { alert(`Line ${i + 1} quantity must be higher than 0.`); return; }
+    if (item.quantity > item.max_stock) { alert(`Line ${i + 1} quantity exceeds warehouse stock bounds (Max: ${item.max_stock}).`); return; }
   }
-
   router.post('/invoices', invoiceForm.value, {
     onSuccess: () => { showCreateModal.value = false; }
   });
 };
 
-const triggerPayment = (invoice) => {
-  const maxPayable = parseFloat((invoice.total_price - invoice.paid_amount).toFixed(2));
-  const amt = prompt(`Enter payment amount (Max acceptable: $${maxPayable.toFixed(2)})`);
-  if (amt === null) return;
+// ---------------------------------
+// 🔥 【重构】高级结账/收账 Modal 控制中心
+// ---------------------------------
+const showPaymentModal = ref(false);
+const selectedInvoice = ref(null);
+const paymentForm = ref({ paid_amount: '' });
+const paymentValidationError = ref('');
 
+// 计算当前发票剩余应付的最大金额
+const maxPayableAmount = computed(() => {
+  if (!selectedInvoice.value) return 0;
+  return parseFloat((selectedInvoice.value.total_price - selectedInvoice.value.paid_amount).toFixed(2));
+});
+
+// 前端实时交互校验器
+const isPaymentValid = computed(() => {
+  const amt = parseFloat(paymentForm.value.paid_amount);
+  return !isNaN(amt) && amt > 0 && amt <= maxPayableAmount.value;
+});
+
+const openPaymentModal = (invoice) => {
+  selectedInvoice.value = invoice;
+  paymentForm.value.paid_amount = ''; // 默认为空，给用户更清爽的输入体验
+  paymentValidationError.value = '';
+  showPaymentModal.value = true;
+};
+
+const closePaymentModal = () => {
+  showPaymentModal.value = false;
+  selectedInvoice.value = null;
+};
+
+// 快捷键：一键全额支付
+const setFullPayment = () => {
+  paymentForm.value.paid_amount = maxPayableAmount.value;
+  paymentValidationError.value = '';
+};
+
+// 提交收账表单到后端服务层
+const submitPayment = () => {
+  paymentValidationError.value = '';
+  const amt = parseFloat(paymentForm.value.paid_amount);
+
+  // 严格的前端边界和正则控制格式
   const numericRegex = /^\d+(\.\d{1,2})?$/;
-  if (!numericRegex.test(amt) || parseFloat(amt) <= 0 || parseFloat(amt) > maxPayable) {
-    alert("Invalid boundary configuration amount input parameters!");
+  if (isNaN(amt) || !numericRegex.test(paymentForm.value.paid_amount.toString()) || amt <= 0) {
+    paymentValidationError.value = "Please enter a valid monetary amount (e.g. 120.50)";
     return;
   }
-  router.post(`/invoices/${invoice.id}/pay`, { paid_amount: parseFloat(amt) });
+
+  if (amt > maxPayableAmount.value) {
+    paymentValidationError.value = `Amount cannot exceed the remaining balance ($${maxPayableAmount.value.toFixed(2)})`;
+    return;
+  }
+
+  // 发起收账请求，向后端推送结构化数据对象
+  router.post(`/invoices/${selectedInvoice.value.id}/pay`, { 
+    paid_amount: amt 
+  }, {
+    preserveState: true,
+    onSuccess: () => {
+      closePaymentModal();
+    }
+  });
 };
 </script>
