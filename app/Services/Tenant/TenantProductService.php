@@ -2,11 +2,14 @@
 
 namespace App\Services\Tenant;
 
+use App\Jobs\Tenant\SendInvoiceEmailJob;
+use App\Models\Tenant\Customer;
 use App\Repositories\Tenant\ProductRepository;
 use App\Repositories\Tenant\InvoiceRepository;
 use App\Repositories\Tenant\CustomerRepository;
 use App\Models\Tenant\Goods;
 use App\Models\Tenant\Invoice;
+use App\Models\Tenant\InvoiceEmailTask;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -76,18 +79,34 @@ class TenantProductService
 
             $totalPrice = $goods->price * $data['quantity'];
             
-            return $this->invoiceRepo->create([
+            $invoice = $this->invoiceRepo->create([
                 'customer_id' => $data['customer_id'],
                 'goods_id'    => $goods->id,
                 'invoice_no'  => Invoice::generateInvNo(),
                 'quantity'    => $data['quantity'],
                 'unit_price'  => $goods->price,
                 'total_price' => $totalPrice,
-                'issue_date'  => now()->toDateString(),
-                'due_date'    => now()->addDays(30)->toDateString(),
+                'issue_date'  => now()->toDateTimeString(),
+                'due_date'    => now()->addDays(30)->endOfDay()->toDateTimeString(),
                 'paid_amount' => 0.00,
                 'status'      => 'unpaid',
             ]);
+
+            $customer = Customer::findOrFail($data['customer_id']);
+            $customerEmail = $customer->email;
+
+            $emailTask = InvoiceEmailTask::create([
+                'invoice_id'     => $invoice->id,
+                'customer_email' => $customerEmail,
+                'status'         => 'pending',
+                'response'       => null
+            ]);
+
+            $currentTenantId = tenant('id'); 
+
+            SendInvoiceEmailJob::dispatch($emailTask->id, $currentTenantId)->onQueue('default');
+
+            return $invoice;
         });
     }
 }

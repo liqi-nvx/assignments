@@ -63,7 +63,7 @@ class TenantInvoiceService
 
             return $this->paymentRepo->create([
                 'invoice_id'   => $invoice->id,
-                'payment_date' => now()->toDateString(),
+                'payment_date' => now()->toDateTimeString(),
                 'paid_amount'  => $amountToPay,
                 'trans_no'     => Payment::generateTransNo(),
                 'status'       => 1
