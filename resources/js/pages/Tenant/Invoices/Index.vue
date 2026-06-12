@@ -91,9 +91,33 @@
       </div>
 
       <div v-if="invoices.links.length > 3" class="mt-4 flex justify-between items-center text-xs">
-        <div class="text-gray-500">Showing entries {{ invoices.from }} to {{ invoices.to }} of {{ invoices.total }}</div>
+        <div class="text-gray-500">
+          Showing entries {{ invoices.from }} to {{ invoices.to }} of {{ invoices.total }}
+        </div>
+        
         <div class="flex space-x-1">
-          <Component :is="link.url ? 'Link' : 'span'" v-for="(link, key) in invoices.links" :key="key" :href="link.url" class="px-2.5 py-1 rounded transition-colors" :class="{'bg-indigo-600 text-white font-bold': link.active, 'bg-white text-gray-700 hover:bg-gray-100 border': link.url && !link.active, 'text-gray-300 pointer-events-none border bg-gray-50': !link.url}"><span v-html="link.label"></span></Component>
+          <template v-for="(link, key) in invoices.links" :key="key">
+            
+            <Link 
+              v-if="link.url" 
+              :href="link.url" 
+              class="px-2.5 py-1 rounded transition-colors border"
+              :class="{
+                'bg-indigo-600 text-white font-bold border-indigo-600': link.active, 
+                'bg-white text-gray-700 hover:bg-gray-100': !link.active
+              }"
+            >
+              <span v-html="link.label"></span>
+            </Link>
+
+            <span 
+              v-else 
+              class="px-2.5 py-1 rounded border text-gray-300 pointer-events-none bg-gray-50"
+            >
+              <span v-html="link.label"></span>
+            </span>
+
+          </template>
         </div>
       </div>
     </div>

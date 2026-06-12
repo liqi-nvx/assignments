@@ -57,6 +57,39 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="products.links && products.links.length > 3" class="mt-4 flex justify-between items-center text-xs">
+        <div class="text-gray-500">
+          Showing entries {{ products.from }} to {{ products.to }} of {{ products.total }}
+        </div>
+        
+        <div class="flex space-x-1">
+          <template v-for="(link, key) in products.links" :key="key">
+            
+            <Link 
+              v-if="link.url" 
+              :href="link.url" 
+              :data="{ search: filters.search, stock_status: filters.stockStatus }"
+              class="px-2.5 py-1 rounded transition-colors border"
+              :class="{
+                'bg-emerald-600 text-white font-bold border-emerald-600': link.active, 
+                'bg-white text-gray-700 hover:bg-gray-100': !link.active
+              }"
+            >
+              <span v-html="link.label"></span>
+            </Link>
+
+            <span 
+              v-else 
+              class="px-2.5 py-1 rounded border text-gray-300 pointer-events-none bg-gray-50"
+            >
+              <span v-html="link.label"></span>
+            </span>
+
+          </template>
+        </div>
+      </div>
+
     </div>
 
     <div v-if="showCreateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
