@@ -1,4 +1,3 @@
-cat <<'EOF' > README.md
 # Multi-Tenant SaaS Invoice & Inventory System
 
 A high-performance, multi-tenant SaaS application built with Laravel 13. This system utilizes physical database isolation for each tenant via stancl/tenancy and PostgreSQL, ensuring data security and high scalability.
