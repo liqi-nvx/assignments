@@ -68,6 +68,31 @@ Testing Highlights:
 * Financial Precision: All monetary values use decimal(12, 2) to eliminate floating-point errors.
 * Automation: Uses scheduled tasks with optimized indices for efficient overdue invoice processing.
 
-## 📊 Database Schema (ERD)
+## 📊 Database Schema Documentation
 
-EOF
+This system employs a decoupled, multi-tenant database architecture. The central database manages tenant identity and routing, while each tenant operates within an independent database instance to ensure strict data isolation.
+
+### 1. Central Database (Management)
+* **`tenants`**: Stores unique tenant identifiers and meta-configurations.
+* **`domains`**: Maps public hostnames to specific `tenant_id`s, facilitating dynamic database connection switching.
+
+### 2. Tenant Databases (Business Logic)
+Each tenant's database contains the following specialized modules:
+
+| Module | Core Tables | Key Relationships |
+| :--- | :--- | :--- |
+| **Authentication** | `users`, `personal_access_tokens` | Manages tenant-specific users and Sanctum API tokens. |
+| **Inventory** | `goods` | Implements inventory tracking with `decimal` precision for pricing. |
+| **Sales** | `customers`, `invoices`, `invoice_items` | Links items to invoices via foreign keys with cascading deletes. |
+| **Financial** | `payments` | Tracks payments linked to `invoice_id` for balance calculation. |
+| **Automation** | `invoice_overdue_tasks`, `invoice_email_tasks` | Queue-based status machines for scheduled operations. |
+
+
+
+### 3. Technical Integrity & Performance
+* **Financial Accuracy**: All currency-related fields (e.g., `price`, `total_price`) utilize the `decimal(12, 2)` data type to ensure precise financial reporting.
+* **Concurrency Protection**: Critical operations (e.g., stock reduction) utilize **pessimistic locking** (`lockForUpdate`) to prevent race conditions.
+* **Performance Indexing**: 
+    * Composite indices are implemented on `invoice_items` (`invoice_id`, `goods_id`) to accelerate query execution.
+    * Status fields in task tables are indexed to support high-performance filtering for background workers.
+* **Cascading Operations**: Foreign key constraints are set with `onDelete('cascade')` across all modules to ensure data consistency during resource removal.
