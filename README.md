@@ -19,19 +19,29 @@ The system employs a "Central-Tenant" separation architecture:
 
 ## 📋 Setup Guide
 
-### 1. Requirements
-Ensure you have PHP 8.3+, Composer, Node.js, and PostgreSQL installed.
+### 1. Environment
+* **Environment**: Ubuntu + Docker (Sail)
+* **PHP**: 8.3+
+* **Dependencies**: Composer, Node.js, PostgreSQL
 
 ### 2. Installation
+# Clone and enter the project
 git clone https://github.com/liqi-nvx/assignments.git
 cd assignments
+
+# Install dependencies
 composer install
-npm install && npm run build
+npm install
+
+# Setup environment
 cp .env.example .env
 php artisan key:generate
 
 ### 3. Database Migration
-php artisan migrate --force
+# Run migrations to set up the schema
+php artisan migrate
+
+# Optional: Seed fake data for testing
 php artisan db:seed
 
 ## 🧪 Testing
