@@ -56,9 +56,9 @@ php artisan db:seed
 
 ## 🧪 Testing
 The system includes robust unit and feature tests covering multi-tenant context switching and database operations.
-
+```bash
 php artisan test
-
+```
 Testing Highlights:
 * Connection Management: Includes pg_terminate_backend logic to force-release PostgreSQL locks, ensuring DROP DATABASE succeeds during test teardown.
 * Queue Testing: Uses PHP Reflection to verify multi-tenant ID integrity in asynchronous jobs.
