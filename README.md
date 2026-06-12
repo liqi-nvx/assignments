@@ -25,24 +25,34 @@ The system employs a "Central-Tenant" separation architecture:
 * **Dependencies**: Composer, Node.js, PostgreSQL
 
 ### 2. Installation
-# Clone and enter the project
+**Clone the repository:**
+```bash
 git clone https://github.com/liqi-nvx/assignments.git
 cd assignments
+```
 
-# Install dependencies
+**Install dependencies:**
+```bash
 composer install
 npm install
+```
 
-# Setup environment
+**Setup environment:**
+```bash
 cp .env.example .env
 php artisan key:generate
+```
 
 ### 3. Database Migration
-# Run migrations to set up the schema
+**Run migrations to set up the schema:**
+```bash
 php artisan migrate
+```
 
-# Optional: Seed fake data for testing
+**Optional: Seed fake data for testing:**
+```bash
 php artisan db:seed
+```
 
 ## 🧪 Testing
 The system includes robust unit and feature tests covering multi-tenant context switching and database operations.
