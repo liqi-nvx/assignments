@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Actions\Tenant;
+namespace App\Services\Tenant;
 
 use App\Models\Tenant\Invoice;
 use App\Models\Tenant\Payment;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
-class GetDashboardStatsAction
+class TenantDashboardService
 {
-    public function execute(string $tenantId): array
+    public function getDashboardStats(string $tenantId): array
     {
         $cacheKey = "tenant:{$tenantId}:dashboard:stats";
 

@@ -198,12 +198,18 @@ const submitForm = () => {
   if (isEdit.value) {
     // 对应后端的 public function update(Request $request, Customer $customer)
     form.put(`/customers/${currentCustomerId.value}`, {
-      onSuccess: () => showModal.value = false
+      onSuccess: () => {
+        showModal.value = false;
+        form.reset();
+      }
     });
   } else {
     // 对应后端的 public function store(CustomerRequest $request)
     form.post('/customers', {
-      onSuccess: () => showModal.value = false
+      onSuccess: () => {
+        showModal.value = false;
+        form.reset();
+      }
     });
   }
 };

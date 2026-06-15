@@ -3,14 +3,21 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Actions\Tenant\GetDashboardStatsAction;
+use App\Services\Tenant\TenantDashboardService;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index(GetDashboardStatsAction $getStatsAction)
+    protected TenantDashboardService $dashboardService;
+
+    public function __construct(TenantDashboardService $dashboardService)
     {
-        $stats = $getStatsAction->execute(tenant('id'));
+        $this->dashboardService = $dashboardService;
+    }
+
+    public function index()
+    {
+        $stats = $this->dashboardService->getDashboardStats(tenant('id'));
 
         return Inertia::render('Tenant/Dashboard', [
             'stats' => $stats
