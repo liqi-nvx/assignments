@@ -24,7 +24,7 @@
     <main class="flex-1 flex flex-col overflow-y-auto">
       <header class="bg-white shadow-sm py-4 px-8 flex justify-between items-center">
         <h1 class="text-lg font-semibold text-gray-700">
-          Tenant: <span class="text-indigo-600">{{ tenantId }}</span>
+          Tenant: <span class="text-indigo-600 uppercase">{{ tenantId }}</span>
         </h1>
         <div class="flex items-center space-x-3 text-sm text-gray-600">
           <span>Hi, <strong>{{ userName }}</strong></span>
