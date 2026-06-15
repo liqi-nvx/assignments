@@ -57,7 +57,7 @@ class TenantDataSeeder extends Seeder
     private function seedGoods(): array
     {
         $goods = [];
-        for ($i = 1; $i <= 50; $i++) {
+        for ($i = 1; $i <= 100; $i++) {
             $goods[] = [
                 'name'       => 'Premium Spare Part #' . str_pad((string)$i, 3, '0', STR_PAD_LEFT),
                 'stock'      => rand(500, 2000),
@@ -73,7 +73,7 @@ class TenantDataSeeder extends Seeder
     private function seedCustomers(): array
     {
         $chunks = [];
-        for ($i = 1; $i <= 300; $i++) {
+        for ($i = 1; $i <= 500; $i++) {
             $chunks[] = [
                 'name'       => 'Corporate Client ' . Str::random(5),
                 'email'      => 'client' . $i . '@example.com',
@@ -89,7 +89,7 @@ class TenantDataSeeder extends Seeder
 
     private function seedInvoicesAndPayments(array $customerIds, array $goodsIds): void
     {
-        $totalInvoices = 3000; // 设在区间 2000-5000 的中间偏高位置
+        $totalInvoices = 5000; // 设在区间 2000-5000 的中间偏高位置
         $invoiceBatch = [];
         $itemBatch    = [];
         $paymentBatch = [];
@@ -97,19 +97,19 @@ class TenantDataSeeder extends Seeder
         $invoiceCounter = 1;
         $paymentCounter = 1;
 
-        $startDate = Carbon::now()->subMonths(12);
+        $startDate = Carbon::now()->subMonths(2);
 
         $this->command->getOutput()->progressStart($totalInvoices);
 
         for ($i = 1; $i <= $totalInvoices; $i++) {
             // 模拟连续一年的业务时间轴递增
             $issueDate = $startDate->copy()->addMinutes($i * 17);
-            $dueDate   = $issueDate->copy()->addDays(30);
+            $dueDate   = $issueDate->copy()->addDays(30)->endOfDay();
 
             // 提前预扣一个固定的自增 ID（PostgreSQL/MySQL 原生自增序列可预测）
             $currentInvoiceId = $invoiceCounter++;
             
-            // 1. 计算这一张发票包含几个商品条目 (平均 3 到 4 个条目，总数约 10,000 条)
+            // 1. 计算这一张发票包含几个商品条目 (平均 3 到 4 个条目，总数约 15,000 条)
             $itemCount = rand(2, 5);
             $totalPrice = 0.00;
 
@@ -151,7 +151,7 @@ class TenantDataSeeder extends Seeder
             $invoiceBatch[] = [
                 'id'          => $currentInvoiceId,
                 'customer_id' => $customerIds[array_rand($customerIds)],
-                'invoice_no'  => 'INV-' . $issueDate->format('Ymd') . '-' . str_pad((string)$i, 5, '0', STR_PAD_LEFT),
+                'invoice_no'  => 'INV' . $issueDate->format('ym') . str_pad((string)$i, 5, '0', STR_PAD_LEFT),
                 'total_price' => $totalPrice,
                 'paid_amount' => $paidAmount,
                 'status'      => $status,
@@ -167,7 +167,7 @@ class TenantDataSeeder extends Seeder
                     'invoice_id'   => $currentInvoiceId,
                     'payment_date' => $issueDate->copy()->addDays(rand(1, 10)),
                     'paid_amount'  => $paidAmount,
-                    'trans_no'     => 'TRX-' . $issueDate->format('Ymd') . '-' . str_pad((string)($paymentCounter++), 6, '0', STR_PAD_LEFT),
+                    'trans_no'     => 'TRX' . $issueDate->format('ym') . str_pad((string)($paymentCounter++), 5, '0', STR_PAD_LEFT),
                     'status'       => 1,
                     'created_at'   => $issueDate,
                     'updated_at'   => $issueDate,

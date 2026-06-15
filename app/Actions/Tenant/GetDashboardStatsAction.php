@@ -17,7 +17,6 @@ class GetDashboardStatsAction
             $now = Carbon::now();
             $startOfMonth = $now->copy()->startOfMonth()->toDateTimeString();
             $endOfMonth = $now->copy()->endOfMonth()->toDateTimeString();
-            $today = $now->toDateString();
 
             $currentMonthRevenue = Payment::whereBetween('payment_date', [$startOfMonth, $endOfMonth])->sum('paid_amount');
 
@@ -26,7 +25,7 @@ class GetDashboardStatsAction
                     SUM(CASE WHEN status IN ('overdue', 'partial', 'unpaid') THEN (total_price - paid_amount) ELSE 0 END) as outstanding,
                     SUM(CASE WHEN status = 'paid' THEN total_price ELSE 0 END) as paid,
                     SUM(CASE WHEN status IN ('overdue', 'partial', 'unpaid') AND due_date < ? THEN (total_price - paid_amount) ELSE 0 END) as overdue
-                ", [$today])
+                ", [$now])
                 ->first();
 
             return [

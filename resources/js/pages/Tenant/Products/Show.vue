@@ -30,6 +30,7 @@
             <option value="unpaid">Unpaid</option>
             <option value="partial">Partial</option>
             <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
           </select>
           <input v-model="searchFields.start_date" @change="debouncedSearch" type="date" class="border rounded p-2 text-xs bg-white"/>
           <input v-model="searchFields.end_date" @change="debouncedSearch" type="date" class="border rounded p-2 text-xs bg-white"/>
@@ -70,6 +71,7 @@
                 <td class="px-6 py-4">
                   <span :class="{
                     'bg-red-100 text-red-800': inv.status === 'unpaid',
+                    'bg-red-100 text-red-800': inv.status === 'overdue',
                     'bg-amber-100 text-amber-800': inv.status === 'partial',
                     'bg-green-100 text-green-800': inv.status === 'paid'
                   }" class="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider">

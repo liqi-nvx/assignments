@@ -34,6 +34,7 @@
           <option value="unpaid">Unpaid</option>
           <option value="partial">Partial</option>
           <option value="paid">Paid</option>
+          <option value="overdue">Overdue</option>
         </select>
         <input v-model="query.start_date" type="date" class="border rounded p-2 text-xs bg-white focus:ring-1 focus:ring-indigo-500 outline-none" @change="filterInvoices"/>
         <input v-model="query.end_date" type="date" class="border rounded p-2 text-xs bg-white focus:ring-1 focus:ring-indigo-500 outline-none" @change="filterInvoices"/>
