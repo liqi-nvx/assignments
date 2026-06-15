@@ -108,7 +108,7 @@ class TenantInvoiceService
             ]);
 
             $currentTenantId = tenant('id'); 
-            SendInvoiceEmailJob::dispatch($emailTask->id, $currentTenantId)->onQueue('default');
+            SendInvoiceEmailJob::dispatch($emailTask->id, $currentTenantId)->onQueue('default')->afterCommit();
 
             return $invoice;
         });
