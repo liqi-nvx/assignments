@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('invoice_id');
             $table->string('customer_email');
             $table->string('status')->default('pending'); // pending, processing, success, failed
+            $table->dateTime('date_at');
             $table->text('response')->nullable();
             $table->timestamps();
 

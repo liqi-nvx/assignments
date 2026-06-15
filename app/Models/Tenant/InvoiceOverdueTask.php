@@ -8,7 +8,7 @@ class InvoiceOverdueTask extends Model
 {
     protected $table = 'invoice_overdue_tasks';
 
-    protected $fillable = ['invoice_id', 'status', 'response'];
+    protected $fillable = ['invoice_id', 'status', 'date_at','response'];
 
     public function invoice()
     {

@@ -8,7 +8,7 @@ class InvoiceEmailTask extends Model
 {
     protected $table = 'invoice_email_tasks';
 
-    protected $fillable = ['invoice_id', 'customer_email', 'status', 'response'];
+    protected $fillable = ['invoice_id', 'customer_email', 'date_at', 'status', 'response'];
 
     public function invoice()
     {

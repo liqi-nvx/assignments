@@ -45,6 +45,7 @@ class ScanOverdueInvoices extends Command
                     
                     $task = InvoiceOverdueTask::create([
                         'invoice_id' => $invoice->id,
+                        'date_at'    => now()->toDateTimeString(),
                         'status'     => 'pending',
                         'response'   => null
                     ]);

@@ -103,6 +103,7 @@ class TenantInvoiceService
             $emailTask = $this->emailTaskRepo->create([
                 'invoice_id'     => $invoice->id,
                 'customer_email' => $customer->email,
+                'date_at'        => now()->toDateTimeString(),
                 'status'         => 'pending'
             ]);
 
