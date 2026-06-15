@@ -105,6 +105,7 @@ class TenantDataSeeder extends Seeder
 
         $invoiceCounter = 1;
         $paymentCounter = 1;
+        $counters = [];
 
         $startDate = Carbon::now()->subMonths(2);
 
@@ -114,6 +115,16 @@ class TenantDataSeeder extends Seeder
             // 模拟连续一年的业务时间轴递增
             $issueDate = $startDate->copy()->addMinutes($i * 17);
             $dueDate   = $issueDate->copy()->addDays(30)->endOfDay();
+
+            // 获取年月 key (例如 '2603', '2604')
+            $ymKey = $issueDate->format('ym');
+            // 如果该年月计数器不存在，则初始化为 1
+            if (!isset($counters['invoice'][$ymKey])) {
+                $counters['invoice'][$ymKey] = 1;
+                $counters['payment'][$ymKey] = 1;
+            }
+            // 获取当前流水号并自增
+            $invoiceSeq = $counters['invoice'][$ymKey]++;
 
             // 提前预扣一个固定的自增 ID（PostgreSQL/MySQL 原生自增序列可预测）
             $currentInvoiceId = $invoiceCounter++;
@@ -160,7 +171,7 @@ class TenantDataSeeder extends Seeder
             $invoiceBatch[] = [
                 'id'          => $currentInvoiceId,
                 'customer_id' => $customerIds[array_rand($customerIds)],
-                'invoice_no'  => 'INV' . $issueDate->format('ym') . str_pad((string)$i, 5, '0', STR_PAD_LEFT),
+                'invoice_no'  => 'INV' . $ymKey . str_pad((string)$invoiceSeq, 5, '0', STR_PAD_LEFT),
                 'total_price' => $totalPrice,
                 'paid_amount' => $paidAmount,
                 'status'      => $status,
@@ -172,11 +183,13 @@ class TenantDataSeeder extends Seeder
 
             // 3. 关联生成支付流水 (Payments)
             if ($paidAmount > 0) {
+                $paymentSeq = $counters['payment'][$ymKey]++;
+                
                 $paymentBatch[] = [
                     'invoice_id'   => $currentInvoiceId,
-                    'payment_date' => $issueDate->copy()->addDays(rand(1, 10)),
+                    'payment_date' => $issueDate,
                     'paid_amount'  => $paidAmount,
-                    'trans_no'     => 'TRX' . $issueDate->format('ym') . str_pad((string)($paymentCounter++), 5, '0', STR_PAD_LEFT),
+                    'trans_no'     => 'TRX' . $ymKey . str_pad((string)$paymentSeq, 5, '0', STR_PAD_LEFT),
                     'status'       => 1,
                     'created_at'   => $issueDate,
                     'updated_at'   => $issueDate,
