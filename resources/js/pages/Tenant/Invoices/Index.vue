@@ -64,7 +64,7 @@
               </td>
               <td class="px-4 py-3 whitespace-nowrap">{{ inv.issue_date }}</td>
               <td class="px-4 py-3 text-rose-600 whitespace-nowrap">{{ inv.due_date }}</td>
-              <td class="px-4 py-3 font-medium text-slate-700">{{ inv.customer?.name }}</td>
+              <td class="px-4 py-3 font-medium text-slate-700">{{ inv.customer_name }}</td>
               <td class="px-4 py-3 text-indigo-600 max-w-xs truncate">
                 <span v-for="(item, idx) in inv.items" :key="item.id">
                   {{ item.goods?.name }} (x{{ item.quantity }}){{ idx < inv.items.length - 1 ? ', ' : '' }}

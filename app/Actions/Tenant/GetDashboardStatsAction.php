@@ -24,7 +24,7 @@ class GetDashboardStatsAction
             $invoiceStats = Invoice::query()
                 ->selectRaw("
                     SUM(CASE WHEN status IN ('overdue', 'partial', 'unpaid') THEN (total_price - paid_amount) ELSE 0 END) as outstanding,
-                    SUM(CASE WHEN status = 'paid' THEN total_price ELSE 0 END) as paid,
+                    SUM(paid_amount) as paid,
                     SUM(CASE WHEN status IN ('overdue', 'partial', 'unpaid') AND due_date < ? THEN (total_price - paid_amount) ELSE 0 END) as overdue
                 ", [$today])
                 ->first();

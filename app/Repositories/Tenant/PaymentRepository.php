@@ -10,11 +10,11 @@ class PaymentRepository
 {
     public function getPaginated(array $filters): LengthAwarePaginator
     {
-        $query = Payment::select('payments.*')->with(['invoice:id,invoice_no']);
+        $query = Payment::select('payments.*', 'invoices.invoice_no as invoice_no')
+            ->leftJoin('invoices', 'payments.invoice_id', '=', 'invoices.id');
 
         if (!empty($filters['invoice_no'])) {
-            $query->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-                ->where('invoices.invoice_no', 'ILIKE', "%{$filters['invoice_no']}%");
+            $query->where('invoices.invoice_no', 'ILIKE', "%{$filters['invoice_no']}%");
         }
 
         if (!empty($filters['trans_no'])) {

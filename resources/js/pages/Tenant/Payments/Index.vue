@@ -76,11 +76,11 @@
               
               <td class="px-6 py-4 font-mono font-bold">
                 <Link 
-                  v-if="payment.invoice" 
+                  v-if="payment.invoice_id" 
                   :href="`/invoices/${payment.invoice_id}`" 
                   class="text-indigo-600 hover:text-indigo-900 hover:underline"
                 >
-                  {{ payment.invoice.invoice_no }}
+                  {{ payment.invoice_no }}
                 </Link>
                 <span v-else class="text-gray-400 italic">N/A</span>
               </td>

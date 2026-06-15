@@ -79,7 +79,7 @@
               
               <td class="px-6 py-4 whitespace-nowrap">{{ item.issue_date }}</td>
               
-              <td class="px-6 py-4 font-medium text-slate-700">{{ item.customer?.name || 'N/A' }}</td>
+              <td class="px-6 py-4 font-medium text-slate-700">{{ item.customer_name || 'N/A' }}</td>
               
               <td class="px-6 py-4 font-mono font-semibold text-gray-900">
                 ${{ parseFloat(item.total_price).toFixed(2) }}

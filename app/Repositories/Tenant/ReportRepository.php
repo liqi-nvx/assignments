@@ -9,15 +9,16 @@ class ReportRepository
 {
     public function getSalesReportData(array $filters): array
     {
-        $query = Invoice::select('invoices.*')->with(['customer:id,name']);
+        $query = Invoice::query()
+            ->select('invoices.*', 'customers.name as customer_name')
+            ->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
 
         if (!empty($filters['invoice_no'])) {
             $query->where('invoices.invoice_no', 'ILIKE', "%{$filters['invoice_no']}%");
         }
         
         if (!empty($filters['customer_name'])) {
-            $query->join('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
+            $query->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
         }
 
         if (!empty($filters['start_date'])) {
@@ -30,14 +31,12 @@ class ReportRepository
             $query->where('invoices.issue_date', '<=', $endDate);
         }
 
-        $summaryQuery = clone $query;
-        $aggregates = $summaryQuery->select(
-            DB::raw('COALESCE(SUM(invoices.total_price), 0) as total_price_sum'),
-            DB::raw('COALESCE(SUM(invoices.paid_amount), 0) as paid_amount_sum')
-        )->first();
+        $aggregates = clone $query;
+        $aggregates->getQuery()->columns = null; 
 
-        $totalPriceSum = (float) $aggregates->total_price_sum;
-        $paidAmountSum = (float) $aggregates->paid_amount_sum;
+        $aggregates = $aggregates->selectRaw('COALESCE(SUM(invoices.total_price), 0) as total_price_sum, COALESCE(SUM(invoices.paid_amount), 0) as paid_amount_sum')
+            ->toBase()
+            ->first();
 
         $paginatedItems = $query->orderBy('invoices.issue_date', 'desc')
                                 ->paginate(10)
@@ -46,9 +45,9 @@ class ReportRepository
         return [
             'paginated_items' => $paginatedItems,
             'summary' => [
-                'total_price_sum'        => $totalPriceSum,
-                'paid_amount_sum'        => $paidAmountSum,
-                'outstanding_amount_sum' => round($totalPriceSum - $paidAmountSum, 2),
+                'total_price_sum'        => (float) $aggregates->total_price_sum,
+                'paid_amount_sum'        => (float) $aggregates->paid_amount_sum,
+                'outstanding_amount_sum' => round($aggregates->total_price_sum - $aggregates->paid_amount_sum, 2),
             ]
         ];
     }
