@@ -21,6 +21,24 @@ class ReportRepository
             $query->where('customers.name', 'ILIKE', "%{$filters['customer_name']}%");
         }
 
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'overdue') {
+                $query->where(function ($q) {
+                    $q->where('invoices.status', 'overdue')
+                    ->orWhere(function ($sub) {
+                        $sub->where('due_date', '<', now())
+                            ->whereColumn('paid_amount', '<', 'total_price');
+                    });
+                });
+            } else {
+                $query->where('invoices.status', $filters['status'])
+                    ->whereNot(function ($q) {
+                        $q->where('invoices.due_date', '<', now())
+                            ->whereColumn('invoices.paid_amount', '<', 'invoices.total_price');
+                    });
+            }
+        }
+
         if (!empty($filters['start_date'])) {
             $startDate = Carbon::parse($filters['start_date'])->startOfDay()->toDateTimeString();
             $query->where('invoices.issue_date', '>=', $startDate);
@@ -40,6 +58,11 @@ class ReportRepository
 
         $paginatedItems = $query->orderBy('invoices.issue_date', 'desc')
                                 ->paginate(10)
+                                ->through(function ($invoice) {
+                                    $isOverdue = ($invoice->due_date < now() && $invoice->invoice_paid_amount < $invoice->total_price);
+                                    $invoice->status = $isOverdue ? 'overdue' : $invoice->status;
+                                    return $invoice;
+                                })
                                 ->withQueryString();
 
         return [

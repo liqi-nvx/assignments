@@ -56,7 +56,21 @@ class ProductRepository
         }
         
         if (!empty($filters['status'])) {
-            $query->where('invoices.status', $filters['status']);
+            if ($filters['status'] === 'overdue') {
+                $query->where(function ($q) {
+                    $q->where('invoices.status', 'overdue')
+                    ->orWhere(function ($sub) {
+                        $sub->where('invoices.due_date', '<', now())
+                            ->whereColumn('invoices.paid_amount', '<', 'invoices.total_price');
+                    });
+                });
+            } else {
+                $query->where('invoices.status', $filters['status'])
+                    ->whereNot(function ($q) {
+                        $q->where('invoices.due_date', '<', now())
+                            ->whereColumn('invoices.paid_amount', '<', 'invoices.total_price');
+                    });
+            }
         }
 
         if (!empty($filters['start_date'])) {
@@ -69,7 +83,14 @@ class ProductRepository
             $query->where('invoices.issue_date', '<=', $endDate);
         }
 
-        return $query->orderBy('invoices.id', 'desc')->paginate(10)->withQueryString();
+        return $query->orderBy('invoices.id', 'desc')
+            ->paginate(10)
+            ->through(function ($invoice) {
+                $isOverdue = ($invoice->due_date < now() && $invoice->invoice_paid_amount < $invoice->total_price);
+                $invoice->status = $isOverdue ? 'overdue' : $invoice->status;
+                return $invoice;
+            })
+            ->withQueryString();
     }
 
     public function create(array $data): Goods

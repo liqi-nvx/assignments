@@ -38,6 +38,16 @@
           />
         </div>
         <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Status</label>
+          <select v-model="searchFilters.status" class="border rounded p-2 text-xs w-full bg-white focus:ring-1 focus:ring-indigo-500 outline-none" @change="submitSearch">
+            <option value="">All Statuses</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Partial</option>
+            <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </div>
+        <div>
           <label class="block text-xs font-semibold text-gray-500 mb-1">Start Date (Invoice Date)</label>
           <input 
             v-model="searchFilters.start_date" 
@@ -149,6 +159,7 @@ const props = defineProps({ report: Object, filters: Object });
 const searchFilters = ref({
   invoice_no: props.filters.invoice_no || '',
   customer_name: props.filters.customer_name || '',
+  status: props.filters.status || '',
   start_date: props.filters.start_date || '',
   end_date: props.filters.end_date || '',
 });
@@ -177,6 +188,7 @@ const resetFilters = () => {
   searchFilters.value = {
     invoice_no: '',
     customer_name: '',
+    status: '',
     start_date: '',
     end_date: '',
   };

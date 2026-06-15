@@ -9,8 +9,8 @@
           </Link>
           <h2 class="text-2xl font-bold text-gray-800">Invoice: {{ invoice.invoice_no }}</h2>
         </div>
-        <span :class="statusColors(invoice.status)" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-          {{ invoice.status }}
+        <span :class="statusColors(invoice.computed_status)" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          {{ invoice.computed_status }}
         </span>
       </div>
 

@@ -12,6 +12,8 @@ class Invoice extends Model
     
     protected $fillable = ['customer_id', 'invoice_no', 'total_price', 'issue_date', 'due_date', 'paid_amount', 'status'];
 
+    protected $appends = ['computed_status'];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
@@ -37,5 +39,18 @@ class Invoice extends Model
         }
 
         return $prefix . '00001';
+    }
+
+    public function getComputedStatusAttribute()
+    {
+        if ($this->status === 'overdue') {
+            return 'overdue';
+        }
+
+        if ($this->due_date < now() && $this->paid_amount < $this->total_price) {
+            return 'overdue';
+        }
+
+        return $this->status;
     }
 }

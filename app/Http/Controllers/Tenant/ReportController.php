@@ -17,7 +17,7 @@ class ReportController extends Controller
 
     public function salesReport(Request $request)
     {
-        $filters = $request->only(['invoice_no', 'customer_name', 'start_date', 'end_date']);
+        $filters = $request->only(['invoice_no', 'customer_name', 'start_date', 'status', 'end_date']);
         
         $reportData = $this->reportService->generateSalesReport($filters);
 
