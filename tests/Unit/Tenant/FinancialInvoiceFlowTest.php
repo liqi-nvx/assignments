@@ -173,6 +173,7 @@ class FinancialInvoiceFlowTest extends TenantTestCase
 
         $task = InvoiceOverdueTask::create([
             'invoice_id' => $expiredInvoice->id,
+            'date_at'    => now()->toDateTimeString(),
             'status'     => 'pending'
         ]);
 
