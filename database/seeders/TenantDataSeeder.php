@@ -30,6 +30,15 @@ class TenantDataSeeder extends Seeder
         $this->seedInvoicesAndPayments($customerIds, $goodsIds);
 
         $this->command->info("====== 租户 [" . tenant('id') . "] 数据全部注入成功！ ======");
+
+        $this->resetSequence('invoices');
+        $this->resetSequence('payments');
+        $this->resetSequence('customers');
+        $this->resetSequence('goods');
+        $this->resetSequence('users');
+        $this->resetSequence('invoice_items');
+
+        $this->command->info("====== 所有序列已重置，数据库已就绪 ======");
     }
 
     private function seedUsers(): void
@@ -202,5 +211,15 @@ class TenantDataSeeder extends Seeder
 
         $this->command->getOutput()->progressFinish();
         $this->command->comment("-> 级联关系发票/明细/流水注入完毕.");
+    }
+
+    private function resetSequence(string $table): void
+    {
+        // PostgreSQL 获取当前最大 ID 并重置序列
+        $maxId = DB::table($table)->max('id');
+        if ($maxId) {
+            $sequenceName = "{$table}_id_seq";
+            DB::statement("SELECT setval(pg_get_serial_sequence('$table', 'id'), $maxId + 1);");
+        }
     }
 }
