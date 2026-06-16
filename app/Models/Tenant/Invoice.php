@@ -31,14 +31,23 @@ class Invoice extends Model
 
     public static function generateInvNo(): string
     {
+        // 从配置或系统中读取位数，默认 5 位
+        $padding = config('invoice.number_padding', 5);
         $prefix = 'INV' . now()->format('ym');
-        $latestInvoice = self::where('invoice_no', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-        if ($latestInvoice) {
-            $lastFiveDigits = (int)substr($latestInvoice->invoice_no, -5) + 1;
-            return $prefix . str_pad((string)$lastFiveDigits, 5, '0', STR_PAD_LEFT);
+        
+        // 使用 Redis 的 INCR 保证并发安全
+        // 键名示例: invoice_sequence:INV2606
+        $key = "invoice_sequence:{$prefix}";
+        
+        // Redis INCR 会自动从 1 开始递增
+        $nextId = \Illuminate\Support\Facades\Redis::incr($key);
+        
+        // 如果是第一天生成的，设置过期时间（防止 Redis 内存堆积）
+        if ($nextId === 1) {
+            \Illuminate\Support\Facades\Redis::expire($key, 86400 * 60); // 保留 60 天
         }
 
-        return $prefix . '00001';
+        return $prefix . str_pad((string)$nextId, $padding, '0', STR_PAD_LEFT);
     }
 
     public function getComputedStatusAttribute()

@@ -58,55 +58,57 @@ class TenantInvoiceService
 
     public function createInvoice(array $data): Invoice
     {
-        return DB::transaction(function () use ($data) {
-            $totalInvoicePrice = 0.00;
-            $itemsToCreate = [];
+        return retry(3, function () use ($data) { //失败的话可以最多retry 3次（例如相同的invoice no导致失败）
+            return DB::transaction(function () use ($data) {
+                $totalInvoicePrice = 0.00;
+                $itemsToCreate = [];
 
-            foreach ($data['items'] as $item) {
-                $goods = Goods::where('id', $item['goods_id'])->lockForUpdate()->firstOrFail();
+                foreach ($data['items'] as $item) {
+                    $goods = Goods::where('id', $item['goods_id'])->lockForUpdate()->firstOrFail();
 
-                if ($item['quantity'] > $goods->stock) {
-                    throw new Exception("Product [{$goods->name}] has insufficient warehouse inventory (Available: {$goods->stock}).");
+                    if ($item['quantity'] > $goods->stock) {
+                        throw new Exception("Product [{$goods->name}] has insufficient warehouse inventory (Available: {$goods->stock}).");
+                    }
+
+                    $goods->decrement('stock', $item['quantity']);
+
+                    $itemTotal = round($goods->price * $item['quantity'], 2);
+                    $totalInvoicePrice += $itemTotal;
+
+                    $itemsToCreate[] = [
+                        'goods_id' => $goods->id,
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $goods->price,
+                        'total_price' => $itemTotal
+                    ];
                 }
 
-                $goods->decrement('stock', $item['quantity']);
+                $invoice = $this->invoiceRepo->create([
+                    'customer_id' => $data['customer_id'],
+                    'invoice_no'  => Invoice::generateInvNo(),
+                    'total_price' => $totalInvoicePrice,
+                    'issue_date'  => now()->toDateTimeString(),
+                    'due_date'    => now()->addDays(30)->endOfDay()->toDateTimeString(),
+                    'paid_amount' => 0.00,
+                    'status'      => 'unpaid',
+                ]);
 
-                $itemTotal = round($goods->price * $item['quantity'], 2);
-                $totalInvoicePrice += $itemTotal;
+                $invoice->items()->createMany($itemsToCreate);
 
-                $itemsToCreate[] = [
-                    'goods_id' => $goods->id,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $goods->price,
-                    'total_price' => $itemTotal
-                ];
-            }
+                $customer = Customer::findOrFail($data['customer_id']);
+                $emailTask = $this->emailTaskRepo->create([
+                    'invoice_id'     => $invoice->id,
+                    'customer_email' => $customer->email,
+                    'date_at'        => now()->toDateTimeString(),
+                    'status'         => 'pending'
+                ]);
 
-            $invoice = $this->invoiceRepo->create([
-                'customer_id' => $data['customer_id'],
-                'invoice_no'  => Invoice::generateInvNo(),
-                'total_price' => $totalInvoicePrice,
-                'issue_date'  => now()->toDateTimeString(),
-                'due_date'    => now()->addDays(30)->endOfDay()->toDateTimeString(),
-                'paid_amount' => 0.00,
-                'status'      => 'unpaid',
-            ]);
+                $currentTenantId = tenant('id'); 
+                SendInvoiceEmailJob::dispatch($emailTask->id, $currentTenantId)->onQueue('default')->afterCommit();
 
-            $invoice->items()->createMany($itemsToCreate);
-
-            $customer = Customer::findOrFail($data['customer_id']);
-            $emailTask = $this->emailTaskRepo->create([
-                'invoice_id'     => $invoice->id,
-                'customer_email' => $customer->email,
-                'date_at'        => now()->toDateTimeString(),
-                'status'         => 'pending'
-            ]);
-
-            $currentTenantId = tenant('id'); 
-            SendInvoiceEmailJob::dispatch($emailTask->id, $currentTenantId)->onQueue('default')->afterCommit();
-
-            return $invoice;
-        });
+                return $invoice;
+            });
+        }, 100);
     }
 
     public function payInvoice(Invoice $invoice, array $data): Payment
