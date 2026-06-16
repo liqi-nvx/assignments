@@ -113,36 +113,38 @@ class TenantInvoiceService
 
     public function payInvoice(Invoice $invoice, array $data): Payment
     {
-        return DB::transaction(function () use ($invoice, $data) {
-            $invoice = Invoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
-            
-            if ($invoice->status === 'paid') {
-                throw new Exception("This invoice has already been fully paid.");
-            }
+        return retry(3, function () use ($invoice, $data) { //失败的话可以最多retry 3次（例如相同的trans no导致失败）
+            return DB::transaction(function () use ($invoice, $data) {
+                $invoice = Invoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
+                
+                if ($invoice->status === 'paid') {
+                    throw new Exception("This invoice has already been fully paid.");
+                }
 
-            $amountToPay = (float)$data['paid_amount'];
-            $remaining = round((float)$invoice->total_price - (float)$invoice->paid_amount, 2);
+                $amountToPay = (float)$data['paid_amount'];
+                $remaining = round((float)$invoice->total_price - (float)$invoice->paid_amount, 2);
 
-            if ($amountToPay > $remaining) {
-                throw new Exception("The input amount [${amountToPay}] exceeds remaining balance [${remaining}].");
-            }
+                if ($amountToPay > $remaining) {
+                    throw new Exception("The input amount [${amountToPay}] exceeds remaining balance [${remaining}].");
+                }
 
-            $newPaidAmount = round((float)$invoice->paid_amount + $amountToPay, 2);
-            $newStatus = ($newPaidAmount >= (float)$invoice->total_price) ? 'paid' : 'partial';
+                $newPaidAmount = round((float)$invoice->paid_amount + $amountToPay, 2);
+                $newStatus = ($newPaidAmount >= (float)$invoice->total_price) ? 'paid' : 'partial';
 
-            $invoice->update([
-                'paid_amount' => $newPaidAmount,
-                'status'      => $newStatus
-            ]);
+                $invoice->update([
+                    'paid_amount' => $newPaidAmount,
+                    'status'      => $newStatus
+                ]);
 
-            return $this->paymentRepo->create([
-                'invoice_id'   => $invoice->id,
-                'payment_date' => now()->toDateTimeString(),
-                'paid_amount'  => $amountToPay,
-                'trans_no'     => Payment::generateTransNo(),
-                'status'       => 1
-            ]);
-        });
+                return $this->paymentRepo->create([
+                    'invoice_id'   => $invoice->id,
+                    'payment_date' => now()->toDateTimeString(),
+                    'paid_amount'  => $amountToPay,
+                    'trans_no'     => Payment::generateTransNo(),
+                    'status'       => 1
+                ]);
+            });
+        }, 100);
     }
 
     public function processOverdue(int $taskId)

@@ -5,6 +5,7 @@ namespace App\Models\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Redis;
 
 class Invoice extends Model
 {
@@ -40,11 +41,11 @@ class Invoice extends Model
         $key = "invoice_sequence:{$prefix}";
         
         // Redis INCR 会自动从 1 开始递增
-        $nextId = \Illuminate\Support\Facades\Redis::incr($key);
+        $nextId = Redis::incr($key);
         
         // 如果是第一天生成的，设置过期时间（防止 Redis 内存堆积）
         if ($nextId === 1) {
-            \Illuminate\Support\Facades\Redis::expire($key, 86400 * 60); // 保留 60 天
+            Redis::expire($key, 86400 * 60); // 保留 60 天
         }
 
         return $prefix . str_pad((string)$nextId, $padding, '0', STR_PAD_LEFT);
