@@ -46,11 +46,6 @@ class TenantInvoiceService
         return $this->customerRepo->getAllForSelection();
     }
 
-    public function getGoodsForSelection(): Collection
-    {
-        return Goods::orderBy('name', 'asc')->get();
-    }
-
     public function getInvoiceDetails(Invoice $invoice): Invoice
     {
         return $invoice->load(['customer', 'items.goods']);

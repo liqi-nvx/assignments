@@ -31,6 +31,11 @@ class TenantProductService
         return $this->productRepo->getInvoicesPaginated($product, $filters);
     }
 
+    public function getGoodsForSelection(): Collection
+    {
+        return Goods::orderBy('name', 'asc')->get();
+    }
+
     public function createProduct(array $data): Goods
     {
         return $this->productRepo->create($data);

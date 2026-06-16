@@ -38,8 +38,8 @@ Route::middleware([
         Route::get('/settings', [MailSettingController::class, 'edit'])->name('tenant.settings.edit');
         Route::put('/settings', [MailSettingController::class, 'update'])->name('tenant.settings.update');
 
-        Route::resource('customers', CustomerController::class);
-        Route::resource('products', ProductController::class);
+        Route::resource('customers', CustomerController::class)->except(['create', 'edit', 'show']);
+        Route::resource('products', ProductController::class)->except(['create', 'edit']);
         
         Route::resource('invoices', InvoiceController::class)->only(['index', 'show', 'store']);
         Route::post('invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');

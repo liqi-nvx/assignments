@@ -7,6 +7,7 @@ use App\Http\Requests\Tenant\PayInvoiceRequest;
 use App\Http\Requests\Tenant\StoreInvoiceRequest;
 use App\Services\Tenant\TenantInvoiceService;
 use App\Models\Tenant\Invoice;
+use App\Services\Tenant\TenantProductService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Exception;
@@ -14,10 +15,14 @@ use Exception;
 class InvoiceController extends Controller
 {
     protected TenantInvoiceService $invoiceService;
+    protected TenantProductService $productService;
 
-    public function __construct(TenantInvoiceService $invoiceService)
-    {
+    public function __construct(
+        TenantInvoiceService $invoiceService,
+        TenantProductService $productService
+    ) {
         $this->invoiceService = $invoiceService;
+        $this->productService = $productService;
     }
 
     public function index(Request $request)
@@ -26,7 +31,7 @@ class InvoiceController extends Controller
         
         $invoices = $this->invoiceService->getPaginatedInvoices($filters);
         $customers = $this->invoiceService->getCustomersForSelection();
-        $goods = $this->invoiceService->getGoodsForSelection();
+        $goods = $this->productService->getGoodsForSelection();
 
         return Inertia::render('Tenant/Invoices/Index', [
             'invoices'  => $invoices,
