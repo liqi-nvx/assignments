@@ -103,7 +103,7 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Initial Stock</label>
-              <input v-model.number="createForm.stock" type="number" min="0" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"/>
+              <input v-model.number="createForm.stock" type="number" min="0" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" @keydown="blockNonIntegers" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Unit Price ($)</label>
@@ -135,15 +135,32 @@ const filters = reactive({
 const showCreateModal = ref(false);
 const createForm = reactive({ name: '', stock: 0, price: 0.00 });
 
+const blockNonIntegers = (event) => {
+  // 允许的按键：删除、箭头、Tab、回车
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
+  
+  if (allowedKeys.includes(event.key)) return;
+
+  // 拦截小数点 (.) 、负号 (-) 和 科学计数法 (e)
+  if (event.key === '.' || event.key === '-' || event.key === 'e') {
+    event.preventDefault();
+  }
+};
+
 const doSearch = () => {
   router.get('/products', { search: filters.search, stock_status: filters.stockStatus }, { preserveState: true, replace: true });
 };
 
 const submitCreate = () => {
-  if (!createForm.name || createForm.stock < 0 || createForm.price < 0) {
-    alert("Please fill validation constraints properly.");
+  const stock = parseInt(createForm.stock, 10);
+
+  if (!createForm.name || isNaN(stock) || stock < 0 || createForm.price < 0) {
+    alert("Please fill validation constraints properly. Stock must be an integer.");
     return;
   }
+
+  createForm.stock = stock;
+
   router.post('/products', createForm, {
     onSuccess: () => {
       showCreateModal.value = false;
@@ -154,9 +171,20 @@ const submitCreate = () => {
 
 const openRestockPrompt = (product) => {
   const qty = prompt(`Enter additional stock count to add for [ ${product.name} ] :`);
+
   if (qty === null) return;
-  const intQty = parseInt(qty);
-  if (isNaN(intQty) || intQty < 0) { alert("Invalid quantity."); return; }
+
+  if (qty.includes('.')) {
+    alert("Invalid input: Decimals are not allowed. Please enter a whole number.");
+    return;
+  }
+
+  const intQty = parseInt(qty, 10);
+
+  if (isNaN(intQty) || intQty < 0 || qty.trim() === '') { 
+    alert("Invalid quantity. Please enter a positive integer."); 
+    return; 
+  }
   router.put(`/products/${product.id}`, { stock: intQty });
 };
 

@@ -155,7 +155,7 @@
                   ${{ item.price ? parseFloat(item.price).toFixed(2) : '0.00' }}
                 </div>
                 <div class="w-24">
-                  <input v-model.number="item.quantity" type="number" min="1" :max="item.max_stock" placeholder="Qty" class="w-full border rounded p-1.5 text-xs font-mono text-center focus:ring-1 focus:ring-indigo-500" />
+                  <input v-model.number="item.quantity" type="number" min="1" :max="item.max_stock" placeholder="Qty" class="w-full border rounded p-1.5 text-xs font-mono text-center focus:ring-1 focus:ring-indigo-500" @keydown="blockNonIntegers" />
                 </div>
                 <div class="w-24 text-right font-mono font-bold text-gray-700 text-xs px-2">
                   ${{ (item.price * (item.quantity || 0)).toFixed(2) }}
@@ -293,6 +293,18 @@ const statusColors = (status) => {
 const showCreateModal = ref(false);
 const invoiceForm = ref({ customer_id: '', items: [] });
 
+const blockNonIntegers = (event) => {
+  // 允许的按键：Backspace, Delete, Arrow Keys, Tab, Enter
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
+  
+  if (allowedKeys.includes(event.key)) return;
+
+  // 拦截小数点 (.) 和 e (科学计数法)
+  if (event.key === '.' || event.key === 'e' || event.key === '-') {
+    event.preventDefault();
+  }
+};
+
 const openCreateModal = () => {
   invoiceForm.value = { customer_id: '', items: [] };
   addItemRow();
@@ -339,9 +351,14 @@ const submitCreateInvoice = () => {
   }
   for (let i = 0; i < invoiceForm.value.items.length; i++) {
     const item = invoiceForm.value.items[i];
+
+    const qty = parseInt(item.quantity, 10);
+
     if (!item.goods_id) { alert(`Line ${i + 1} has an unselected product row.`); return; }
-    if (item.quantity <= 0) { alert(`Line ${i + 1} quantity must be higher than 0.`); return; }
-    if (item.quantity > item.max_stock) { alert(`Line ${i + 1} quantity exceeds warehouse stock bounds (Max: ${item.max_stock}).`); return; }
+    if (isNaN(qty) || qty <= 0) { alert(`Line ${i + 1} quantity must be a valid integer higher than 0.`); return; }
+    if (qty > item.max_stock) { alert(`Line ${i + 1} quantity exceeds warehouse stock bounds.`); return; }
+
+    item.quantity = qty;
   }
   router.post('/invoices', invoiceForm.value, {
     onSuccess: () => { showCreateModal.value = false; }
