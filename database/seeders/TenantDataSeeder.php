@@ -17,7 +17,7 @@ class TenantDataSeeder extends Seeder
 
         $this->command->info("====== 开始初始化租户 [" . tenant('id') . "] 的海量测试数据 ======");
 
-        // 1. 生成账户 (密码: 123456)
+        // 1. 生成账户 (密码: 12345678)
         $this->seedUsers();
 
         // 2. 生成商品数据 (Goods)
@@ -43,7 +43,7 @@ class TenantDataSeeder extends Seeder
 
     private function seedUsers(): void
     {
-        $password = Hash::make('123456');
+        $password = Hash::make('12345678');
         DB::table('users')->insert([
             [
                 'name'       => 'Master Admin',
