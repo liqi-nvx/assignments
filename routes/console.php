@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('tenant:scan-overdue')->daily();
-// Schedule::command('tenant:scan-overdue')->everyMinute()->withoutOverlapping();
+// Schedule::command('tenant:scan-overdue')->everyMinute()->withoutOverlapping(10);
