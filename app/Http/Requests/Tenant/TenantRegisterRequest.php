@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Tenant;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class TenantRegisterRequest extends FormRequest {
     
@@ -15,7 +16,9 @@ class TenantRegisterRequest extends FormRequest {
         return [
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'password' => ['required', 'string', 'confirmed',
+                Password::defaults(),
+            ],
         ];
     }
 }

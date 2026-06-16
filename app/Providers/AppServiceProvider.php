@@ -24,15 +24,6 @@ class AppServiceProvider extends ServiceProvider
         if (class_exists(\Laravel\Sanctum\SanctumServiceProvider::class)) {
             $this->app->register(\Laravel\Sanctum\SanctumServiceProvider::class);
         }
-
-        $this->app->bind(
-            \App\Repositories\Contracts\TenantRepositoryInterface::class,
-            \App\Repositories\Eloquent\TenantRepository::class
-        );
-        $this->app->bind(
-            \App\Repositories\Contracts\TenantBusinessRepositoryInterface::class,
-            \App\Repositories\Eloquent\TenantBusinessRepository::class
-        );
     }
 
     /**
